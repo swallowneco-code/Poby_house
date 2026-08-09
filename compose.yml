@@ -1,0 +1,15 @@
+services:
+  my-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: POBY
+      TZ: Asia/Seoul
+    command:
+      - --default-time-zone=Asia/Seoul
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+    ports:
+      - 3306:3306
