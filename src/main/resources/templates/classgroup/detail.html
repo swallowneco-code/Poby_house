@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${group.name} + ' - 반 정보'">반 정보</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+
+<header class="top">
+    <div class="wrap">
+        <a class="brand" th:href="@{/classes}">← 반 목록</a>
+        <a class="btn" th:href="@{/classes/{id}/edit(id=${group.id})}">수정</a>
+    </div>
+</header>
+
+<div class="wrap">
+
+    <div class="flash" th:if="${message}" th:text="${message}"></div>
+
+    <h1>
+        <span th:text="${group.name}">화목 A반</span>
+        <span class="badge LEFT" th:unless="${group.active}">종료</span>
+    </h1>
+
+    <div class="card">
+        <dl class="detail">
+            <div><dt>진도 레벨</dt><dd th:text="${group.level} ?: '—'">분수 심화</dd></div>
+            <div><dt>수업 시간</dt><dd th:text="${group.scheduleText}">화목 15:00~16:30</dd></div>
+            <div><dt>담당</dt><dd th:text="${group.teacher != null} ? ${group.teacher.name} : '—'">포비</dd></div>
+        </dl>
+    </div>
+
+    <h2 class="sec">소속 학생 <span class="cnt" th:text="${#lists.size(enrollments)}">0</span></h2>
+
+    <p class="empty" th:if="${#lists.isEmpty(enrollments)}">
+        아직 이 반에 배정된 학생이 없습니다.
+    </p>
+
+    <ul class="students">
+        <li th:each="e : ${enrollments}">
+            <div class="row">
+                <a class="rowmain" th:href="@{/students/{id}(id=${e.student.id})}">
+                    <span class="s-name" th:text="${e.student.name}">김민준</span>
+                    <span class="s-sub" th:text="${e.student.grade} ?: ''">초6</span>
+                    <br>
+                    <span class="code" th:text="${e.student.code} + ' · ' + ${e.startedOn} + ' 배정'">S2026001</span>
+                </a>
+                <form method="post" th:action="@{/classes/{id}/students/{eid}/release(id=${group.id},eid=${e.id})}">
+                    <button type="submit" class="btn small">빼기</button>
+                </form>
+            </div>
+        </li>
+    </ul>
+
+    <div class="card" th:if="${not #lists.isEmpty(assignable)}">
+        <form method="post" th:action="@{/classes/{id}/students(id=${group.id})}">
+            <label for="studentId">학생 추가</label>
+            <div class="inline">
+                <select id="studentId" name="studentId">
+                    <option th:each="s : ${assignable}" th:value="${s.id}"
+                            th:text="${s.name} + ' (' + (${s.grade} ?: '학년 미정') + ')'">김민준 (초6)</option>
+                </select>
+                <button class="btn primary" type="submit">추가</button>
+            </div>
+        </form>
+    </div>
+
+    <p class="soon" th:if="${#lists.isEmpty(assignable)}">
+        추가할 수 있는 재원생이 없습니다. 학생을 먼저 등록하거나, 이미 전원이 이 반에 있습니다.
+    </p>
+
+    <div class="card">
+        <p class="soon"><b>다음에 붙일 것</b><br>수업 회차 · 출결 · 진도기록</p>
+    </div>
+
+</div>
+</body>
+</html>

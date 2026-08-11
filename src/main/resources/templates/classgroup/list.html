@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>반 목록</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+
+<header class="top">
+    <div class="wrap">
+        <nav class="nav">
+            <a th:href="@{/students}">학생</a>
+            <a class="on" th:href="@{/classes}">반</a>
+        </nav>
+        <a class="btn primary" th:href="@{/classes/new}">+ 반 만들기</a>
+    </div>
+    <div class="wrap accountbar" th:if="${currentUserName}">
+        <span class="who" th:text="${currentUserName}">포비</span>
+        <span class="sep">·</span>
+        <a th:href="@{/account/password}">비밀번호 변경</a>
+        <span class="sep">·</span>
+        <form method="post" th:action="@{/logout}">
+            <button type="submit" class="linkbtn">로그아웃</button>
+        </form>
+    </div>
+</header>
+
+<div class="wrap">
+
+    <div class="flash" th:if="${message}" th:text="${message}"></div>
+
+    <p class="empty" th:if="${#lists.isEmpty(groups)}">
+        아직 만든 반이 없습니다.<br>
+        오른쪽 위 <b>+ 반 만들기</b>로 시작하세요.
+    </p>
+
+    <ul class="students">
+        <li th:each="g : ${groups}">
+            <a th:href="@{/classes/{id}(id=${g.id})}">
+                <span>
+                    <span class="s-name" th:text="${g.name}">화목 A반</span>
+                    <span class="badge LEFT" th:unless="${g.active}">종료</span>
+                    <br>
+                    <span class="s-sub" th:text="${g.scheduleText}">화목 15:00~16:30</span>
+                    <span class="s-sub" th:if="${g.level}" th:text="' · ' + ${g.level}"> · 분수심화</span>
+                </span>
+                <span class="s-right">
+                    <span class="badge ACTIVE" th:text="${counts.get(g.id)} + '명'">0명</span>
+                </span>
+            </a>
+        </li>
+    </ul>
+
+    <p class="soon" th:if="${not #lists.isEmpty(groups)}">
+        총 <b th:text="${#lists.size(groups)}">0</b>개 반
+    </p>
+
+</div>
+</body>
+</html>

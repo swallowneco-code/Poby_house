@@ -142,3 +142,39 @@ input[type=password]:focus { outline: 2px solid var(--accent); outline-offset: -
     color: var(--muted); font-size: 13px; font-family: inherit;
 }
 .linkbtn:hover { color: var(--danger); text-decoration: underline; }
+
+/* 상단 메뉴 */
+nav.nav { display: flex; gap: 4px; }
+nav.nav a {
+    padding: 6px 12px; border-radius: 8px; text-decoration: none;
+    color: var(--muted); font-size: 16px; font-weight: 600;
+}
+nav.nav a.on { background: var(--accent-weak); color: var(--accent); }
+nav.nav a:hover { background: var(--accent-weak); }
+
+/* 섹션 제목 */
+h2.sec { font-size: 16px; margin: 24px 0 10px; display: flex; align-items: center; gap: 8px; }
+h2.sec .cnt {
+    font-size: 13px; font-weight: 600; color: var(--accent);
+    background: var(--accent-weak); border-radius: 999px; padding: 2px 9px;
+}
+
+/* 목록 행 + 오른쪽 버튼 */
+.row {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 14px;
+}
+.row .rowmain { flex: 1; text-decoration: none; color: var(--text); }
+.row form { margin: 0; }
+
+.btn.small { padding: 7px 12px; font-size: 13px; color: var(--muted); }
+.btn.small:hover { color: var(--danger); border-color: #fecaca; }
+
+/* 한 줄 입력 + 버튼 */
+.inline { display: flex; gap: 8px; align-items: center; }
+.inline select { flex: 1; }
+
+/* 체크박스 라벨 */
+label.check { display: flex; align-items: center; gap: 8px; font-weight: 600; margin: 18px 0 4px; }
+label.check input[type=checkbox] { width: 18px; height: 18px; margin: 0; }

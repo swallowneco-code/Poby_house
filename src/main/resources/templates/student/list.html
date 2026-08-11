@@ -10,7 +10,10 @@
 
 <header class="top">
     <div class="wrap">
-        <a class="brand" th:href="@{/students}">학생 관리</a>
+        <nav class="nav">
+            <a class="on" th:href="@{/students}">학생</a>
+            <a th:href="@{/classes}">반</a>
+        </nav>
         <a class="btn primary" th:href="@{/students/new}">+ 학생 등록</a>
     </div>
     <div class="wrap accountbar" th:if="${currentUserName}">
