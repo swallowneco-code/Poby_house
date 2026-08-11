@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${editing} ? '학생 수정' : '학생 등록'">학생 등록</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+
+<header class="top">
+    <div class="wrap">
+        <a class="brand" th:href="@{/students}">학생 관리</a>
+    </div>
+</header>
+
+<div class="wrap">
+
+    <h1 th:text="${editing} ? '학생 수정' : '학생 등록'">학생 등록</h1>
+
+    <form method="post"
+          th:action="${editing} ? @{/students/{id}(id=${student.id})} : @{/students}"
+          th:object="${form}">
+
+        <div class="card">
+
+            <label for="name">이름 <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="name" th:field="*{name}" placeholder="김민준" autofocus>
+            <p class="error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></p>
+
+            <label for="school">학교</label>
+            <input type="text" id="school" th:field="*{school}" placeholder="대치초">
+
+            <label for="grade">학년</label>
+            <input type="text" id="grade" th:field="*{grade}" placeholder="초6">
+            <p class="hint">반 편성과는 무관합니다. 반은 진도 기준으로 묶습니다.</p>
+
+            <label for="enrolledOn">등록일 <span style="color:var(--danger)">*</span></label>
+            <input type="date" id="enrolledOn" th:field="*{enrolledOn}">
+            <p class="error" th:if="${#fields.hasErrors('enrolledOn')}" th:errors="*{enrolledOn}"></p>
+
+            <label for="status">상태</label>
+            <select id="status" th:field="*{status}">
+                <option th:each="s : ${statuses}" th:value="${s.name()}" th:text="${s.label}">재원</option>
+            </select>
+
+            <div id="leftBox">
+                <label for="leftOn">퇴원일</label>
+                <input type="date" id="leftOn" th:field="*{leftOn}">
+                <p class="hint">퇴원으로 바꾸면 보관 만료일이 <b>퇴원일 + 3년</b>으로 자동 설정됩니다.</p>
+
+                <label for="leaveReason">퇴원 사유</label>
+                <input type="text" id="leaveReason" th:field="*{leaveReason}" placeholder="이사, 학원 변경 등">
+            </div>
+
+            <label for="memo">특이사항</label>
+            <textarea id="memo" th:field="*{memo}" placeholder="알러지, 하원 방법 등 매번 확인할 기본 정보"></textarea>
+
+        </div>
+
+        <div class="actions">
+            <a class="btn wide" th:href="${editing} ? @{/students/{id}(id=${student.id})} : @{/students}">취소</a>
+            <button class="btn primary wide" type="submit" th:text="${editing} ? '저장' : '등록'">등록</button>
+        </div>
+
+    </form>
+
+</div>
+
+<script>
+    // 퇴원일·사유는 상태가 '퇴원'일 때만 보인다
+    (function () {
+        var status = document.getElementById('status');
+        var box = document.getElementById('leftBox');
+        function sync() { box.style.display = (status.value === 'LEFT') ? 'block' : 'none'; }
+        status.addEventListener('change', sync);
+        sync();
+    })();
+</script>
+
+</body>
+</html>

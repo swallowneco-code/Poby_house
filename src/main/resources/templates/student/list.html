@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>학생 목록</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+
+<header class="top">
+    <div class="wrap">
+        <a class="brand" th:href="@{/students}">학생 관리</a>
+        <a class="btn primary" th:href="@{/students/new}">+ 학생 등록</a>
+    </div>
+</header>
+
+<div class="wrap">
+
+    <div class="flash" th:if="${message}" th:text="${message}"></div>
+
+    <div class="toolbar">
+        <form method="get" th:action="@{/students}">
+            <input type="search" name="keyword" placeholder="이름으로 검색" th:value="${keyword}">
+            <button class="btn" type="submit">검색</button>
+        </form>
+    </div>
+
+    <div class="toolbar">
+        <a class="chip" th:classappend="${status == null and keyword == null} ? 'on'"
+           th:href="@{/students}">전체</a>
+        <a class="chip" th:each="s : ${statuses}"
+           th:classappend="${status != null and status.name() == s.name()} ? 'on'"
+           th:href="@{/students(status=${s.name()})}"
+           th:text="${s.label}">재원</a>
+    </div>
+
+    <p class="empty" th:if="${#lists.isEmpty(students)}">
+        아직 등록된 학생이 없습니다.<br>
+        오른쪽 위 <b>+ 학생 등록</b>으로 시작하세요.
+    </p>
+
+    <ul class="students">
+        <li th:each="st : ${students}">
+            <a th:href="@{/students/{id}(id=${st.id})}">
+                <span>
+                    <span class="s-name" th:text="${st.name}">이름</span>
+                    <span class="s-sub"
+                          th:text="${(st.grade ?: '') + (st.school != null ? ' · ' + st.school : '')}">초6 · 대치초</span>
+                    <br>
+                    <span class="code" th:text="${st.code}">S2026001</span>
+                </span>
+                <span class="s-right">
+                    <span class="badge" th:classappend="${st.status.name()}" th:text="${st.status.label}">재원</span>
+                </span>
+            </a>
+        </li>
+    </ul>
+
+    <p class="soon" th:if="${not #lists.isEmpty(students)}">
+        총 <b th:text="${#lists.size(students)}">0</b>명
+    </p>
+
+</div>
+</body>
+</html>

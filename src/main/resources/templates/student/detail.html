@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${student.name} + ' - 학생 정보'">학생 정보</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+
+<header class="top">
+    <div class="wrap">
+        <a class="brand" th:href="@{/students}">← 학생 목록</a>
+        <a class="btn" th:href="@{/students/{id}/edit(id=${student.id})}">수정</a>
+    </div>
+</header>
+
+<div class="wrap">
+
+    <div class="flash" th:if="${message}" th:text="${message}"></div>
+
+    <h1>
+        <span th:text="${student.name}">김민준</span>
+        <span class="badge" th:classappend="${student.status.name()}" th:text="${student.status.label}">재원</span>
+    </h1>
+
+    <div class="card">
+        <dl class="detail">
+            <div><dt>식별번호</dt><dd class="code" th:text="${student.code}">S2026001</dd></div>
+            <div><dt>학교</dt><dd th:text="${student.school} ?: '—'">대치초</dd></div>
+            <div><dt>학년</dt><dd th:text="${student.grade} ?: '—'">초6</dd></div>
+            <div><dt>등록일</dt><dd th:text="${student.enrolledOn}">2026-03-02</dd></div>
+            <div th:if="${student.leftOn != null}"><dt>퇴원일</dt><dd th:text="${student.leftOn}"></dd></div>
+            <div th:if="${student.leaveReason != null}"><dt>퇴원 사유</dt><dd th:text="${student.leaveReason}"></dd></div>
+            <div th:if="${student.purgeAfter != null}">
+                <dt>보관 만료</dt>
+                <dd th:text="${student.purgeAfter} + ' 이후 파기'"></dd>
+            </div>
+            <div><dt>특이사항</dt><dd th:text="${student.memo} ?: '—'"></dd></div>
+        </dl>
+    </div>
+
+    <div class="card">
+        <p class="soon">
+            <b>다음에 붙일 것</b><br>
+            진도기록(매 수업) · 관찰기록(1~4주) · 장면/개입로그(분기) · 평가와 오답 태그
+        </p>
+    </div>
+
+</div>
+</body>
+</html>
