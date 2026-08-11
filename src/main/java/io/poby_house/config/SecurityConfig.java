@@ -3,13 +3,13 @@ package io.poby_house.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * 1단계: 로그인 없이 전부 열어 둔다. 로컬에서 화면을 먼저 완성하기 위한 임시 설정이다.
- * CSRF는 켜 둔다 - Thymeleaf 폼이 토큰을 자동으로 넣어 주므로 지금 꺼 둘 이유가 없다.
- *
- * TODO 화면이 자리 잡으면 Teacher 테이블 기반 로그인으로 교체하고 anyRequest().authenticated() 로 바꾼다.
+ * 로그인하지 않으면 아무 화면도 볼 수 없다.
+ * 예외는 로그인 화면, 최초 계정 설정 화면, 정적 자원뿐이다.
  */
 @Configuration
 public class SecurityConfig {
@@ -17,9 +17,29 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
-                .formLogin(form -> form.disable())
-                .httpBasic(basic -> basic.disable());
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/css/**", "/js/**", "/favicon.ico").permitAll()
+                        .requestMatchers("/login", "/setup").permitAll()
+                        .anyRequest().authenticated())
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .loginProcessingUrl("/login")
+                        .usernameParameter("loginId")
+                        .passwordParameter("password")
+                        .defaultSuccessUrl("/students", true)
+                        .failureUrl("/login?error")
+                        .permitAll())
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/login?logout")
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID")
+                        .permitAll());
         return http.build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }

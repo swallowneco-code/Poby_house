@@ -113,3 +113,32 @@ dl.detail dd { margin: 0; flex: 1; white-space: pre-wrap; }
 
 .empty { text-align: center; color: var(--muted); padding: 48px 0; }
 .soon { color: var(--muted); font-size: 14px; }
+
+/* 로그인 · 최초 설정 */
+.wrap.auth { max-width: 380px; padding-top: 56px; }
+.auth-title { text-align: center; font-size: 22px; margin: 0 0 20px; }
+input[type=password] {
+    width: 100%; padding: 11px 12px; font-size: 16px;
+    border: 1px solid var(--line); border-radius: 8px; background: #fff;
+    font-family: inherit; color: var(--text);
+}
+input[type=password]:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.flash.err { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+
+/* 계정 표시줄 */
+.accountbar {
+    display: flex; align-items: center; gap: 6px;
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid var(--line);
+    font-size: 13px; color: var(--muted);
+}
+.accountbar form { display: inline; margin: 0; }
+.accountbar a { color: var(--muted); text-decoration: none; }
+.accountbar a:hover { color: var(--accent); text-decoration: underline; }
+.who { font-weight: 600; color: var(--text); }
+.sep { color: var(--line); }
+.linkbtn {
+    background: none; border: 0; padding: 0; cursor: pointer;
+    color: var(--muted); font-size: 13px; font-family: inherit;
+}
+.linkbtn:hover { color: var(--danger); text-decoration: underline; }
