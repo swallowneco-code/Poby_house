@@ -49,7 +49,7 @@
                     <span class="code" th:text="${e.student.code} + ' · ' + ${e.startedOn} + ' 배정'">S2026001</span>
                 </a>
                 <form method="post" th:action="@{/classes/{id}/students/{eid}/release(id=${group.id},eid=${e.id})}">
-                    <button type="submit" class="btn small">빼기</button>
+                    <button type="submit" class="btn small quiet">빼기</button>
                 </form>
             </div>
         </li>
@@ -58,7 +58,11 @@
     <h2 class="sec">학생 추가 <span class="cnt" th:text="${#lists.size(assignable)}">0</span></h2>
 
     <div class="card" th:if="${not #lists.isEmpty(assignable)}">
-        <input type="search" id="stuSearch" placeholder="이름으로 검색" autocomplete="off">
+        <div class="searchrow">
+            <input type="search" id="stuSearch" placeholder="이름으로 검색 후 엔터" autocomplete="off" autofocus>
+            <button type="button" class="btn primary" id="quickAdd" disabled>추가</button>
+        </div>
+        <p class="pickhint" id="pickHint"></p>
         <p class="hint">
             <b>어느 반에도 속하지 않은</b> 재원생만 나옵니다.
             반을 옮기려면 원래 반에서 <b>빼기</b>를 먼저 하세요.
@@ -92,13 +96,26 @@
 
 <script>
     // 이름으로 즉시 걸러낸다. 서버에 다시 묻지 않는다.
+    // 후보가 딱 한 명으로 좁혀졌을 때만 엔터로 추가한다. 여러 명일 때 넘겨짚지 않는다.
     (function () {
         var box = document.getElementById('stuSearch');
         if (!box) return;
+
         var items = Array.prototype.slice.call(document.querySelectorAll('#pickList li'));
         var noMatch = document.getElementById('noMatch');
+        var hint = document.getElementById('pickHint');
+        var addBtn = document.getElementById('quickAdd');
 
-        box.addEventListener('input', function () {
+        function visible() {
+            return items.filter(function (li) { return li.style.display !== 'none'; });
+        }
+
+        function setHint(text, cls) {
+            hint.textContent = text;
+            hint.className = 'pickhint' + (cls ? ' ' + cls : '');
+        }
+
+        function refresh() {
             var q = box.value.trim().toLowerCase();
             var shown = 0;
             items.forEach(function (li) {
@@ -107,7 +124,40 @@
                 if (hit) shown++;
             });
             noMatch.style.display = shown ? 'none' : '';
+
+            var vis = visible();
+            if (!q) {
+                setHint('', null);
+                addBtn.disabled = true;
+            } else if (vis.length === 1) {
+                setHint(vis[0].getAttribute('data-name') + ' 학생을 추가합니다. 엔터를 누르세요.', 'ready');
+                addBtn.disabled = false;
+            } else if (vis.length === 0) {
+                setHint('검색 결과가 없습니다.', 'none');
+                addBtn.disabled = true;
+            } else {
+                setHint(vis.length + '명이 검색됩니다. 이름을 더 입력하세요.', 'warn');
+                addBtn.disabled = true;
+            }
+        }
+
+        function addOne() {
+            var vis = visible();
+            if (vis.length !== 1) return;
+            addBtn.disabled = true;
+            vis[0].querySelector('form').submit();
+        }
+
+        box.addEventListener('input', refresh);
+        box.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addOne();
+            }
         });
+        addBtn.addEventListener('click', addOne);
+
+        refresh();
     })();
 </script>
 

@@ -168,8 +168,13 @@ h2.sec .cnt {
 .row .rowmain { flex: 1; text-decoration: none; color: var(--text); }
 .row form { margin: 0; }
 
-.btn.small { padding: 7px 12px; font-size: 13px; color: var(--muted); }
-.btn.small:hover { color: var(--danger); border-color: #fecaca; }
+/* small 은 크기만 바꾼다. 색을 건드리면 뒤에 와서 primary 의 흰 글자를 덮어쓴다 */
+.btn.small { padding: 7px 12px; font-size: 13px; }
+/* 눈에 덜 띄어야 하는 버튼(빼기 등) */
+.btn.quiet { color: var(--muted); }
+.btn.quiet:hover { color: var(--danger); border-color: #fecaca; }
+/* primary 는 어떤 조합에서도 흰 글자를 유지한다 */
+.btn.primary, .btn.primary:hover { color: #fff; }
 
 /* 한 줄 입력 + 버튼 */
 .inline { display: flex; gap: 8px; align-items: center; }
@@ -194,3 +199,16 @@ ul.pick form {
 ul.pick form:hover { background: var(--accent-weak); }
 .pick-main { flex: 1; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .nomatch { text-align: center; color: var(--muted); font-size: 14px; padding: 18px 0 4px; }
+
+/* 검색창 + 추가 버튼 한 줄 */
+.searchrow { display: flex; gap: 8px; align-items: stretch; }
+.searchrow input[type=search] { flex: 1; }
+.searchrow .btn { white-space: nowrap; }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn.primary:disabled:hover { background: var(--accent); }
+
+/* 엔터로 무엇이 추가되는지 알려 주는 줄 */
+.pickhint { font-size: 13px; margin: 8px 0 0; min-height: 19px; }
+.pickhint.ready { color: var(--accent); font-weight: 600; }
+.pickhint.warn { color: var(--warn); }
+.pickhint.none { color: var(--muted); }
