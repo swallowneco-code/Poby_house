@@ -33,6 +33,47 @@
         </dl>
     </div>
 
+    <h2 class="sec">수업 회차 <span class="cnt" th:text="${recordedCount}">0</span></h2>
+
+    <div class="card">
+        <form method="post" th:action="@{/classes/{id}/sessions(id=${group.id})}">
+            <label for="sessionDate">회차 열기</label>
+            <div class="inline">
+                <input type="date" id="sessionDate" name="sessionDate" th:value="${today}">
+                <button class="btn primary" type="submit">기록하기</button>
+            </div>
+            <p class="hint">같은 날짜가 이미 있으면 그 회차로 들어갑니다. 아무것도 안 적으면 목록에 남지 않습니다.</p>
+        </form>
+    </div>
+
+    <div class="toolbar" th:if="${not #lists.isEmpty(months)}">
+        <a class="chip" th:each="m : ${months}"
+           th:classappend="${m == selectedMonth} ? 'on'"
+           th:href="@{/classes/{id}(id=${group.id},month=${m})}"
+           th:text="${#strings.replace(m,'-','.')}">2026.08</a>
+    </div>
+
+    <p class="empty" th:if="${#lists.isEmpty(months)}">
+        아직 기록된 회차가 없습니다.<br>
+        위에서 날짜를 골라 <b>기록하기</b>를 누르세요.
+    </p>
+
+    <ul class="sessions">
+        <li th:each="s : ${sessions}">
+            <div class="row">
+                <a class="rowmain" th:href="@{/sessions/{id}(id=${s.id})}">
+                    <span class="sdate" th:text="${s.sessionDate}">2026-08-12</span>
+                    <span class="snote"
+                          th:text="${s.rangeText} ?: (${s.content} ?: (${s.dailyNote} ?: ''))">p.42~55</span>
+                </a>
+                <form method="post" th:action="@{/sessions/{id}/hide(id=${s.id})}"
+                      onsubmit="return confirm('이 회차를 목록에서 숨길까요?\n\n기록은 지워지지 않습니다. 같은 날짜로 다시 열면 되살아납니다.');">
+                    <button type="submit" class="btn small quiet">숨기기</button>
+                </form>
+            </div>
+        </li>
+    </ul>
+
     <h2 class="sec">소속 학생 <span class="cnt" th:text="${#lists.size(enrollments)}">0</span></h2>
 
     <p class="empty" th:if="${#lists.isEmpty(enrollments)}">
@@ -88,9 +129,6 @@
         추가할 학생이 없습니다. 재원생 전원이 이미 어느 반엔가 소속돼 있거나, 등록된 학생이 없습니다.
     </p>
 
-    <div class="card">
-        <p class="soon"><b>다음에 붙일 것</b><br>수업 회차 · 출결 · 진도기록</p>
-    </div>
 
 </div>
 
