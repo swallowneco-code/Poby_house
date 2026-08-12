@@ -38,6 +38,7 @@ public class ClassGroupController {
         }
         model.addAttribute("groups", groups);
         model.addAttribute("counts", counts);
+        model.addAttribute("unassigned", classGroupService.unassignedCount());
         return "classgroup/list";
     }
 
@@ -67,7 +68,7 @@ public class ClassGroupController {
     public String detail(@PathVariable Long id, Model model) {
         model.addAttribute("group", classGroupService.get(id));
         model.addAttribute("enrollments", classGroupService.currentEnrollments(id));
-        model.addAttribute("assignable", classGroupService.assignableStudents(id));
+        model.addAttribute("assignable", classGroupService.assignableStudents());
         return "classgroup/detail";
     }
 
@@ -100,8 +101,12 @@ public class ClassGroupController {
     public String assign(@PathVariable Long id,
                          @RequestParam Long studentId,
                          RedirectAttributes redirect) {
-        classGroupService.assignStudent(id, studentId, LocalDate.now());
-        redirect.addFlashAttribute("message", "학생을 반에 넣었습니다.");
+        try {
+            classGroupService.assignStudent(id, studentId, LocalDate.now());
+            redirect.addFlashAttribute("message", "학생을 반에 넣었습니다.");
+        } catch (IllegalStateException e) {
+            redirect.addFlashAttribute("errorMessage", e.getMessage());
+        }
         return "redirect:/classes/" + id;
     }
 

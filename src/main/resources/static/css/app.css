@@ -178,3 +178,19 @@ h2.sec .cnt {
 /* 체크박스 라벨 */
 label.check { display: flex; align-items: center; gap: 8px; font-weight: 600; margin: 18px 0 4px; }
 label.check input[type=checkbox] { width: 18px; height: 18px; margin: 0; }
+
+/* 배정 후보 고르기 */
+ul.pick {
+    list-style: none; margin: 12px 0 0; padding: 0;
+    max-height: 320px; overflow-y: auto;
+    border: 1px solid var(--line); border-radius: 8px;
+}
+ul.pick li { border-bottom: 1px solid var(--line); }
+ul.pick li:last-child { border-bottom: 0; }
+ul.pick form {
+    display: flex; align-items: center; gap: 10px;
+    margin: 0; padding: 10px 12px;
+}
+ul.pick form:hover { background: var(--accent-weak); }
+.pick-main { flex: 1; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.nomatch { text-align: center; color: var(--muted); font-size: 14px; padding: 18px 0 4px; }

@@ -21,5 +21,13 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
 
     boolean existsByStudentIdAndClassGroupIdAndEndedOnIsNull(Long studentId, Long classGroupId);
 
+    /** 반을 불문하고 현재 어딘가에 소속돼 있는 배정 전부 */
+    List<Enrollment> findByEndedOnIsNull();
+
+    /** 이 학생이 지금 어느 반이든 소속돼 있는가 */
+    boolean existsByStudentIdAndEndedOnIsNull(Long studentId);
+
+    Optional<Enrollment> findByStudentIdAndEndedOnIsNull(Long studentId);
+
     long countByClassGroupIdAndEndedOnIsNull(Long classGroupId);
 }

@@ -16,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -49,14 +51,22 @@ public class ClassGroupService {
         return enrollmentRepository.findByClassGroupIdAndEndedOnIsNullOrderByStudentNameAsc(classGroupId);
     }
 
-    /** 아직 이 반에 없는 재원생. 배정 후보 목록 */
-    public List<Student> assignableStudents(Long classGroupId) {
-        List<Long> already = currentEnrollments(classGroupId).stream()
+    /**
+     * 배정 후보. 한 학생은 한 반에만 속하므로
+     * <b>어느 반이든</b> 이미 소속된 학생은 제외한다.
+     */
+    public List<Student> assignableStudents() {
+        Set<Long> assignedAnywhere = enrollmentRepository.findByEndedOnIsNull().stream()
                 .map(e -> e.getStudent().getId())
-                .toList();
+                .collect(Collectors.toSet());
         return studentRepository.findByStatusOrderByNameAsc(StudentStatus.ACTIVE).stream()
-                .filter(s -> !already.contains(s.getId()))
+                .filter(s -> !assignedAnywhere.contains(s.getId()))
                 .toList();
+    }
+
+    /** 아직 어느 반에도 안 들어간 재원생 수 */
+    public long unassignedCount() {
+        return assignableStudents().size();
     }
 
     @Transactional
@@ -85,11 +95,20 @@ public class ClassGroupService {
         group.setActive(form.isActive());
     }
 
+    /**
+     * 반에 학생을 넣는다. 이미 다른 반에 있으면 거절한다.
+     * 화면에서 후보를 걸러 주지만, 창을 두 개 띄워 두는 경우를 막기 위해 여기서도 확인한다.
+     */
     @Transactional
     public void assignStudent(Long classGroupId, Long studentId, LocalDate startedOn) {
-        if (enrollmentRepository.existsByStudentIdAndClassGroupIdAndEndedOnIsNull(studentId, classGroupId)) {
-            return;
-        }
+        enrollmentRepository.findByStudentIdAndEndedOnIsNull(studentId).ifPresent(existing -> {
+            if (existing.getClassGroup().getId().equals(classGroupId)) {
+                throw new IllegalStateException("이미 이 반에 있는 학생입니다.");
+            }
+            throw new IllegalStateException(
+                    existing.getStudent().getName() + " 학생은 이미 "
+                            + existing.getClassGroup().getName() + "에 있습니다. 그 반에서 먼저 빼 주세요.");
+        });
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new IllegalArgumentException("학생을 찾을 수 없습니다. id=" + studentId));
         ClassGroup group = get(classGroupId);

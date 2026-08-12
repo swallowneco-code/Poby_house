@@ -55,6 +55,9 @@
 
     <p class="soon" th:if="${not #lists.isEmpty(groups)}">
         총 <b th:text="${#lists.size(groups)}">0</b>개 반
+        <span th:if="${unassigned > 0}">
+            · 아직 반이 없는 학생 <b th:text="${unassigned}">0</b>명
+        </span>
     </p>
 
 </div>
