@@ -4,6 +4,8 @@ import io.poby_house.domain.Teacher;
 import io.poby_house.domain.TeacherRole;
 import io.poby_house.dto.SetupForm;
 import io.poby_house.repository.TeacherRepository;
+import io.poby_house.support.BusinessRuleException;
+import io.poby_house.support.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -25,7 +27,7 @@ public class TeacherService {
     @Transactional
     public Teacher createFirstAdmin(SetupForm form) {
         if (!noAccountYet()) {
-            throw new IllegalStateException("이미 계정이 있습니다.");
+            throw new BusinessRuleException("이미 계정이 있습니다.");
         }
         Teacher teacher = Teacher.of(
                 form.getLoginId().trim(),
@@ -47,6 +49,6 @@ public class TeacherService {
 
     private Teacher get(Long id) {
         return teacherRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("계정을 찾을 수 없습니다. id=" + id));
+                .orElseThrow(() -> new NotFoundException("계정을 찾을 수 없습니다. id=" + id));
     }
 }

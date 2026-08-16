@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(~{::title}, ~{::main}, ~{})}">
+<head>
+    <title>찾을 수 없습니다</title>
+</head>
+<body>
+<main>
+
+    <h1 th:text="${errorTitle} ?: '찾을 수 없습니다'">찾을 수 없습니다</h1>
+
+    <div class="card">
+        <p th:text="${errorDetail} ?: '요청하신 화면이 없습니다.'">학생을 찾을 수 없습니다.</p>
+        <p class="hint">주소를 잘못 눌렀거나, 이미 지워진 것일 수 있습니다.</p>
+    </div>
+
+    <div class="actions">
+        <a class="btn wide" th:href="@{/students}">학생 목록</a>
+        <a class="btn wide" th:href="@{/classes}">반 목록</a>
+    </div>
+
+</main>
+</body>
+</html>

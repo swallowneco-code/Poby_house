@@ -103,12 +103,10 @@ public class ClassGroupController {
     public String assign(@PathVariable Long id,
                          @RequestParam Long studentId,
                          RedirectAttributes redirect) {
-        try {
-            classGroupService.assignStudent(id, studentId, LocalDate.now());
-            redirect.addFlashAttribute("message", "학생을 반에 넣었습니다.");
-        } catch (IllegalStateException e) {
-            redirect.addFlashAttribute("errorMessage", e.getMessage());
-        }
+        // 규칙 위반과 없는 id 는 GlobalExceptionHandler 가 받는다.
+        // 여기서 한 종류만 잡으면 나머지가 500 으로 새어 나간다.
+        classGroupService.assignStudent(id, studentId, LocalDate.now());
+        redirect.addFlashAttribute("message", "학생을 반에 넣었습니다.");
         return "redirect:/classes/" + id;
     }
 

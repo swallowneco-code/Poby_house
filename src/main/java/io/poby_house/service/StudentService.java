@@ -4,6 +4,7 @@ import io.poby_house.domain.Student;
 import io.poby_house.domain.StudentStatus;
 import io.poby_house.dto.StudentForm;
 import io.poby_house.repository.StudentRepository;
+import io.poby_house.support.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +32,7 @@ public class StudentService {
 
     public Student get(Long id) {
         return studentRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("학생을 찾을 수 없습니다. id=" + id));
+                .orElseThrow(() -> new NotFoundException("학생을 찾을 수 없습니다. id=" + id));
     }
 
     @Transactional

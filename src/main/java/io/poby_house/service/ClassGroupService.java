@@ -10,6 +10,8 @@ import io.poby_house.repository.ClassGroupRepository;
 import io.poby_house.repository.EnrollmentRepository;
 import io.poby_house.repository.StudentRepository;
 import io.poby_house.repository.TeacherRepository;
+import io.poby_house.support.BusinessRuleException;
+import io.poby_house.support.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,7 +41,7 @@ public class ClassGroupService {
 
     public ClassGroup get(Long id) {
         return classGroupRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("반을 찾을 수 없습니다. id=" + id));
+                .orElseThrow(() -> new NotFoundException("반을 찾을 수 없습니다. id=" + id));
     }
 
     public long countCurrentStudents(Long classGroupId) {
@@ -103,14 +105,14 @@ public class ClassGroupService {
     public void assignStudent(Long classGroupId, Long studentId, LocalDate startedOn) {
         enrollmentRepository.findByStudentIdAndEndedOnIsNull(studentId).ifPresent(existing -> {
             if (existing.getClassGroup().getId().equals(classGroupId)) {
-                throw new IllegalStateException("이미 이 반에 있는 학생입니다.");
+                throw new BusinessRuleException("이미 이 반에 있는 학생입니다.");
             }
-            throw new IllegalStateException(
+            throw new BusinessRuleException(
                     existing.getStudent().getName() + " 학생은 이미 "
                             + existing.getClassGroup().getName() + "에 있습니다. 그 반에서 먼저 빼 주세요.");
         });
         Student student = studentRepository.findById(studentId)
-                .orElseThrow(() -> new IllegalArgumentException("학생을 찾을 수 없습니다. id=" + studentId));
+                .orElseThrow(() -> new NotFoundException("학생을 찾을 수 없습니다. id=" + studentId));
         ClassGroup group = get(classGroupId);
         enrollmentRepository.save(Enrollment.of(student, group, startedOn == null ? LocalDate.now() : startedOn));
     }
@@ -119,7 +121,7 @@ public class ClassGroupService {
     @Transactional
     public void releaseStudent(Long enrollmentId, LocalDate endedOn) {
         Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
-                .orElseThrow(() -> new IllegalArgumentException("배정 기록을 찾을 수 없습니다. id=" + enrollmentId));
+                .orElseThrow(() -> new NotFoundException("배정 기록을 찾을 수 없습니다. id=" + enrollmentId));
         enrollment.setEndedOn(endedOn == null ? LocalDate.now() : endedOn);
     }
 }
