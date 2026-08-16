@@ -19,8 +19,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 @Controller
 @RequestMapping("/classes")
@@ -31,13 +29,8 @@ public class ClassGroupController {
 
     @GetMapping
     public String list(Model model) {
-        var groups = classGroupService.findAll();
-        Map<Long, Long> counts = new LinkedHashMap<>();
-        for (ClassGroup g : groups) {
-            counts.put(g.getId(), classGroupService.countCurrentStudents(g.getId()));
-        }
-        model.addAttribute("groups", groups);
-        model.addAttribute("counts", counts);
+        model.addAttribute("groups", classGroupService.findAll());
+        model.addAttribute("counts", classGroupService.currentHeadcounts());
         model.addAttribute("unassigned", classGroupService.unassignedCount());
         model.addAttribute("primaryActionHref", "/classes/new");
         model.addAttribute("primaryActionLabel", "+ 반 만들기");

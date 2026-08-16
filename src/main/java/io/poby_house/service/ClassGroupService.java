@@ -17,9 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -35,17 +35,21 @@ public class ClassGroupService {
         return classGroupRepository.findAllByOrderByActiveDescNameAsc();
     }
 
-    public List<ClassGroup> findActive() {
-        return classGroupRepository.findByActiveTrueOrderByNameAsc();
-    }
-
     public ClassGroup get(Long id) {
         return classGroupRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("반을 찾을 수 없습니다. id=" + id));
     }
 
-    public long countCurrentStudents(Long classGroupId) {
-        return enrollmentRepository.countByClassGroupIdAndEndedOnIsNull(classGroupId);
+    /**
+     * 반별 현재 인원. 목록 화면에서 한 번에 쓴다.
+     * 반마다 count 를 돌리면 반 개수만큼 쿼리가 나간다.
+     */
+    public Map<Long, Long> currentHeadcounts() {
+        Map<Long, Long> counts = new HashMap<>();
+        for (Object[] row : enrollmentRepository.countCurrentByClassGroup()) {
+            counts.put((Long) row[0], (Long) row[1]);
+        }
+        return counts;
     }
 
     /** 현재 이 반에 소속된 배정 */
@@ -58,17 +62,12 @@ public class ClassGroupService {
      * <b>어느 반이든</b> 이미 소속된 학생은 제외한다.
      */
     public List<Student> assignableStudents() {
-        Set<Long> assignedAnywhere = enrollmentRepository.findByEndedOnIsNull().stream()
-                .map(e -> e.getStudent().getId())
-                .collect(Collectors.toSet());
-        return studentRepository.findByStatusOrderByNameAsc(StudentStatus.ACTIVE).stream()
-                .filter(s -> !assignedAnywhere.contains(s.getId()))
-                .toList();
+        return studentRepository.findAssignable();
     }
 
-    /** 아직 어느 반에도 안 들어간 재원생 수 */
+    /** 아직 어느 반에도 안 들어간 재원생 수. 목록을 만들지 않고 센다 */
     public long unassignedCount() {
-        return assignableStudents().size();
+        return studentRepository.countAssignable();
     }
 
     @Transactional

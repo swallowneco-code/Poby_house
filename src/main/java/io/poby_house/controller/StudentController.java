@@ -63,6 +63,7 @@ public class StudentController {
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id, Model model) {
         model.addAttribute("student", studentService.get(id));
+        model.addAttribute("enrollments", studentService.enrollmentHistory(id));
         return "student/detail";
     }
 

@@ -8,18 +8,21 @@
 <main>
 
     <div class="toolbar">
+        <!-- 검색해도 고른 상태가 풀리지 않게 함께 보낸다 -->
         <form method="get" th:action="@{/students}">
-            <input type="search" name="keyword" placeholder="이름으로 검색" th:value="${keyword}">
+            <input type="hidden" name="status" th:if="${status != null}" th:value="${status.name()}">
+            <input type="search" name="keyword" placeholder="이름·식별번호·학교로 검색" th:value="${keyword}">
             <button class="btn" type="submit">검색</button>
         </form>
     </div>
 
     <div class="toolbar">
-        <a class="chip" th:classappend="${status == null and keyword == null} ? 'on'"
-           th:href="@{/students}">전체</a>
+        <!-- 상태를 바꿔도 검색어는 유지한다 -->
+        <a class="chip" th:classappend="${status == null} ? 'on'"
+           th:href="@{/students(keyword=${keyword})}">전체</a>
         <a class="chip" th:each="s : ${statuses}"
            th:classappend="${status != null and status.name() == s.name()} ? 'on'"
-           th:href="@{/students(status=${s.name()})}"
+           th:href="@{/students(status=${s.name()},keyword=${keyword})}"
            th:text="${s.label}">재원</a>
     </div>
 

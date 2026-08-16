@@ -33,6 +33,29 @@
         <a class="btn primary wide" th:href="@{/students/{id}/edit(id=${student.id})}">수정</a>
     </div>
 
+    <h2 class="sec">반 <span class="cnt" th:text="${#lists.size(enrollments)}">0</span></h2>
+
+    <p class="empty" th:if="${#lists.isEmpty(enrollments)}">
+        아직 어느 반에도 배정되지 않았습니다.
+    </p>
+
+    <ul class="students">
+        <li th:each="e : ${enrollments}">
+            <a th:href="@{/classes/{id}(id=${e.classGroup.id})}">
+                <span>
+                    <span class="s-name" th:text="${e.classGroup.name}">화목 A반</span>
+                    <br>
+                    <span class="code"
+                          th:text="${e.startedOn} + (${e.endedOn != null} ? ' ~ ' + ${e.endedOn} : ' ~')">2026-03-02 ~</span>
+                </span>
+                <span class="s-right">
+                    <span class="badge" th:classappend="${e.current} ? 'ACTIVE' : 'LEFT'"
+                          th:text="${e.current} ? '현재' : '지난 반'">현재</span>
+                </span>
+            </a>
+        </li>
+    </ul>
+
     <div class="card">
         <p class="soon">
             <b>다음에 붙일 것</b><br>

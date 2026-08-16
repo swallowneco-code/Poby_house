@@ -23,7 +23,8 @@
                     <span class="s-sub" th:if="${g.level}" th:text="' · ' + ${g.level}"> · 분수심화</span>
                 </span>
                 <span class="s-right">
-                    <span class="badge ACTIVE" th:text="${counts.get(g.id)} + '명'">0명</span>
+                    <!-- 아무도 없는 반은 집계에 아예 안 나오므로 기본값이 필요하다 -->
+                    <span class="badge ACTIVE" th:text="${counts.getOrDefault(g.id, 0L)} + '명'">0명</span>
                 </span>
             </a>
         </li>
