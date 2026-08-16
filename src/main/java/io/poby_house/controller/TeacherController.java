@@ -29,7 +29,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class TeacherController {
 
-    private final TeacherService teacherService;
+     private final TeacherService teacherService;
 
     @GetMapping
     public String list(Model model) {
