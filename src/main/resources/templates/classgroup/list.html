@@ -7,10 +7,12 @@
 <body>
 <main>
 
-    <p class="empty" th:if="${#lists.isEmpty(groups)}">
-        아직 만든 반이 없습니다.<br>
-        오른쪽 위 <b>+ 반 만들기</b>로 시작하세요.
-    </p>
+    <div th:if="${#lists.isEmpty(groups)}">
+        <p class="empty">아직 만든 반이 없습니다.</p>
+        <div class="actions">
+            <a class="btn primary wide big" th:href="@{/classes/new}">+ 반 만들기</a>
+        </div>
+    </div>
 
     <ul class="students">
         <li th:each="g : ${groups}">
@@ -29,6 +31,10 @@
             </a>
         </li>
     </ul>
+
+    <div class="actions" th:if="${not #lists.isEmpty(groups)}">
+        <a class="btn primary wide big" th:href="@{/classes/new}">+ 반 만들기</a>
+    </div>
 
     <p class="soon" th:if="${not #lists.isEmpty(groups)}">
         총 <b th:text="${#lists.size(groups)}">0</b>개 반

@@ -293,3 +293,6 @@ CREATE TABLE IF NOT EXISTS Consultation (
   CONSTRAINT fk_consultation_student FOREIGN KEY (studentId) REFERENCES Student(id) ON DELETE CASCADE,
   CONSTRAINT fk_consultation_teacher FOREIGN KEY (createdBy) REFERENCES Teacher(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='학부모 상담일지 (사실/걱정/약속)';
+
+
+INSERT INTO POBY.Teacher (loginId, password, name, role, active, createdAt) VALUES ('test', '$2a$10$xpMmopTjlzbvrUdk.uN5fOFXZguKQZo5mA100U6iQScD4lmjny8RS', '테스트', 'ADMIN', 1, '2026-08-16 13:13:40');

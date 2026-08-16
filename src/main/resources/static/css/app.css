@@ -107,6 +107,8 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
 .btn.wide { flex: 1; text-align: center; }
+/* 목록 아래에서 "여기를 누르면 됩니다"를 대신하는 버튼. 우상단 버튼은 짧은 목록에서 눈에 안 띈다 */
+.btn.big { padding: 16px 18px; font-size: 16px; }
 
 /* 상세 */
 dl.detail { margin: 0; }
