@@ -1,20 +1,11 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(~{::title}, ~{::main}, ~{})}">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${editing} ? '반 수정' : '반 만들기'">반 만들기</title>
-    <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
-
-<header class="top">
-    <div class="wrap">
-        <a class="brand" th:href="@{/classes}">← 반 목록</a>
-    </div>
-</header>
-
-<div class="wrap">
+<main>
 
     <h1 th:text="${editing} ? '반 수정' : '반 만들기'">반 만들기</h1>
 
@@ -24,8 +15,8 @@
 
         <div class="card">
 
-            <label for="name">반 이름 <span style="color:var(--danger)">*</span></label>
-            <input type="text" id="name" th:field="*{name}" placeholder="화목 A반" autofocus>
+            <label for="name">반 이름 <span class="req">*</span></label>
+            <input type="text" id="name" th:field="*{name}" placeholder="화목 A반" required autofocus>
             <p class="error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></p>
 
             <label for="level">진도 레벨</label>
@@ -56,6 +47,6 @@
 
     </form>
 
-</div>
+</main>
 </body>
 </html>

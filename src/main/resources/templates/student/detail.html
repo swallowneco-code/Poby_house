@@ -1,23 +1,11 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(~{::title}, ~{::main}, ~{})}">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${student.name} + ' - 학생 정보'">학생 정보</title>
-    <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
-
-<header class="top">
-    <div class="wrap">
-        <a class="brand" th:href="@{/students}">← 학생 목록</a>
-        <a class="btn" th:href="@{/students/{id}/edit(id=${student.id})}">수정</a>
-    </div>
-</header>
-
-<div class="wrap">
-
-    <div class="flash" th:if="${message}" th:text="${message}"></div>
+<main>
 
     <h1>
         <span th:text="${student.name}">김민준</span>
@@ -40,6 +28,11 @@
         </dl>
     </div>
 
+    <div class="actions">
+        <a class="btn wide" th:href="@{/students}">목록</a>
+        <a class="btn primary wide" th:href="@{/students/{id}/edit(id=${student.id})}">수정</a>
+    </div>
+
     <div class="card">
         <p class="soon">
             <b>다음에 붙일 것</b><br>
@@ -47,6 +40,6 @@
         </p>
     </div>
 
-</div>
+</main>
 </body>
 </html>

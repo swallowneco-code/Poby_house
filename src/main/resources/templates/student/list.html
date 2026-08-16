@@ -1,35 +1,11 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(~{::title}, ~{::main}, ~{})}">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>학생 목록</title>
-    <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
-
-<header class="top">
-    <div class="wrap">
-        <nav class="nav">
-            <a class="on" th:href="@{/students}">학생</a>
-            <a th:href="@{/classes}">반</a>
-        </nav>
-        <a class="btn primary" th:href="@{/students/new}">+ 학생 등록</a>
-    </div>
-    <div class="wrap accountbar" th:if="${currentUserName}">
-        <span class="who" th:text="${currentUserName}">포비</span>
-        <span class="sep">·</span>
-        <a th:href="@{/account/password}">비밀번호 변경</a>
-        <span class="sep">·</span>
-        <form method="post" th:action="@{/logout}">
-            <button type="submit" class="linkbtn">로그아웃</button>
-        </form>
-    </div>
-</header>
-
-<div class="wrap">
-
-    <div class="flash" th:if="${message}" th:text="${message}"></div>
+<main>
 
     <div class="toolbar">
         <form method="get" th:action="@{/students}">
@@ -73,6 +49,6 @@
         총 <b th:text="${#lists.size(students)}">0</b>명
     </p>
 
-</div>
+</main>
 </body>
 </html>

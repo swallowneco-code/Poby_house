@@ -1,20 +1,11 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(~{::title}, ~{::main}, ~{::script})}">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${editing} ? '학생 수정' : '학생 등록'">학생 등록</title>
-    <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
-
-<header class="top">
-    <div class="wrap">
-        <a class="brand" th:href="@{/students}">학생 관리</a>
-    </div>
-</header>
-
-<div class="wrap">
+<main>
 
     <h1 th:text="${editing} ? '학생 수정' : '학생 등록'">학생 등록</h1>
 
@@ -24,8 +15,8 @@
 
         <div class="card">
 
-            <label for="name">이름 <span style="color:var(--danger)">*</span></label>
-            <input type="text" id="name" th:field="*{name}" placeholder="김민준" autofocus>
+            <label for="name">이름 <span class="req">*</span></label>
+            <input type="text" id="name" th:field="*{name}" placeholder="김민준" required autofocus>
             <p class="error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></p>
 
             <label for="school">학교</label>
@@ -35,8 +26,8 @@
             <input type="text" id="grade" th:field="*{grade}" placeholder="초6">
             <p class="hint">반 편성과는 무관합니다. 반은 진도 기준으로 묶습니다.</p>
 
-            <label for="enrolledOn">등록일 <span style="color:var(--danger)">*</span></label>
-            <input type="date" id="enrolledOn" th:field="*{enrolledOn}">
+            <label for="enrolledOn">등록일 <span class="req">*</span></label>
+            <input type="date" id="enrolledOn" th:field="*{enrolledOn}" required>
             <p class="error" th:if="${#fields.hasErrors('enrolledOn')}" th:errors="*{enrolledOn}"></p>
 
             <label for="status">상태</label>
@@ -65,7 +56,7 @@
 
     </form>
 
-</div>
+</main>
 
 <script>
     // 퇴원일·사유는 상태가 '퇴원'일 때만 보인다
@@ -77,6 +68,5 @@
         sync();
     })();
 </script>
-
 </body>
 </html>

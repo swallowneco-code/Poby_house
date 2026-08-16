@@ -39,6 +39,8 @@ public class ClassGroupController {
         model.addAttribute("groups", groups);
         model.addAttribute("counts", counts);
         model.addAttribute("unassigned", classGroupService.unassignedCount());
+        model.addAttribute("primaryActionHref", "/classes/new");
+        model.addAttribute("primaryActionLabel", "+ 반 만들기");
         return "classgroup/list";
     }
 

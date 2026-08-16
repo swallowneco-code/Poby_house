@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<!--
+  화면 껍데기를 한 곳에 모은다.
+
+  이 파일이 생기기 전에는 head 와 헤더가 화면마다 복붙돼 있었고,
+  그래서 붙이는 것을 잊은 화면(학생 상세, 각종 폼)에는 상단 메뉴와 로그아웃이 아예 없었다.
+  껍데기를 한 곳에 두면 그런 누락이 구조적으로 불가능해진다.
+
+  쓰는 쪽:
+    <html th:replace="~{layout/base :: page(~{::title}, ~{::main}, ~{})}">
+  스크립트가 있으면 세 번째 인자에 ~{::script} 를, 없으면 빈 fragment ~{} 를 넘긴다.
+-->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" th:fragment="page(title, content, scripts)">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:replace="${title}">Poby House</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+
+<th:block th:replace="~{layout/base :: topbar}"></th:block>
+
+<div class="wrap">
+    <th:block th:replace="~{layout/base :: flash}"></th:block>
+    <th:block th:replace="${content}"></th:block>
+</div>
+
+<th:block th:replace="${scripts}"></th:block>
+
+</body>
+</html>
+
+
+<!--
+  로그인·최초 설정 전용. 아직 로그인하지 않았으므로 상단 메뉴도 로그아웃도 없다.
+-->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" th:fragment="auth(title, content)">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:replace="${title}">Poby House</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+
+<div class="wrap auth">
+    <th:block th:replace="${content}"></th:block>
+</div>
+
+</body>
+</html>
+
+
+<!--
+  상단 바.
+  activeNav / isAdmin / currentUserName 은 CurrentUserAdvice 가 모든 모델에 넣어 준다.
+  화면마다 컨트롤러를 고칠 필요가 없다.
+-->
+<header th:fragment="topbar" class="top" xmlns:th="http://www.thymeleaf.org">
+    <div class="wrap">
+        <nav class="nav">
+            <a th:href="@{/students}" th:classappend="${activeNav == 'students'} ? 'on'">학생</a>
+            <a th:href="@{/classes}" th:classappend="${activeNav == 'classes'} ? 'on'">반</a>
+            <a th:if="${isAdmin}" th:href="@{/admin/teachers}"
+               th:classappend="${activeNav == 'teachers'} ? 'on'">계정</a>
+        </nav>
+        <!-- 목록 화면만 우상단 버튼을 갖는다. 그 두 곳의 컨트롤러가 모델에 넣어 준다 -->
+        <a th:if="${primaryActionHref}" class="btn primary"
+           th:href="${primaryActionHref}" th:text="${primaryActionLabel}">+ 등록</a>
+    </div>
+    <div class="wrap accountbar" th:if="${currentUserName}">
+        <span class="who" th:text="${currentUserName}">포비</span>
+        <span class="sep">·</span>
+        <a th:href="@{/account/password}">비밀번호 변경</a>
+        <span class="sep">·</span>
+        <form method="post" th:action="@{/logout}">
+            <button type="submit" class="linkbtn">로그아웃</button>
+        </form>
+    </div>
+</header>
+
+
+<!-- 성공/실패 알림. 컨트롤러가 message 또는 errorMessage 를 flash 로 넘긴다. -->
+<div th:fragment="flash" xmlns:th="http://www.thymeleaf.org">
+    <div class="flash" th:if="${message}" th:text="${message}"></div>
+    <div class="flash err" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+</div>

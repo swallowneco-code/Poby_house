@@ -1,24 +1,11 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(~{::title}, ~{::main}, ~{::script})}">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${group.name} + ' - 반 정보'">반 정보</title>
-    <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
-
-<header class="top">
-    <div class="wrap">
-        <a class="brand" th:href="@{/classes}">← 반 목록</a>
-        <a class="btn" th:href="@{/classes/{id}/edit(id=${group.id})}">수정</a>
-    </div>
-</header>
-
-<div class="wrap">
-
-    <div class="flash" th:if="${message}" th:text="${message}"></div>
-    <div class="flash err" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+<main>
 
     <h1>
         <span th:text="${group.name}">화목 A반</span>
@@ -31,6 +18,11 @@
             <div><dt>수업 시간</dt><dd th:text="${group.scheduleText}">화목 15:00~16:30</dd></div>
             <div><dt>담당</dt><dd th:text="${group.teacher != null} ? ${group.teacher.name} : '—'">포비</dd></div>
         </dl>
+    </div>
+
+    <div class="actions">
+        <a class="btn wide" th:href="@{/classes}">목록</a>
+        <a class="btn primary wide" th:href="@{/classes/{id}/edit(id=${group.id})}">수정</a>
     </div>
 
     <h2 class="sec">소속 학생 <span class="cnt" th:text="${#lists.size(enrollments)}">0</span></h2>
@@ -92,7 +84,7 @@
         <p class="soon"><b>다음에 붙일 것</b><br>수업 회차 · 출결 · 진도기록</p>
     </div>
 
-</div>
+</main>
 
 <script>
     // 이름으로 즉시 걸러낸다. 서버에 다시 묻지 않는다.
@@ -150,6 +142,9 @@
 
         box.addEventListener('input', refresh);
         box.addEventListener('keydown', function (e) {
+            // 한글 입력 중의 엔터는 글자를 확정하는 것이지 제출이 아니다.
+            // isComposing 을 보지 않으면 "김민준"의 마지막 글자를 확정하려던 엔터로 폼이 나간다.
+            if (e.isComposing || e.keyCode === 229) return;
             if (e.key === 'Enter') {
                 e.preventDefault();
                 addOne();
@@ -160,6 +155,5 @@
         refresh();
     })();
 </script>
-
 </body>
 </html>

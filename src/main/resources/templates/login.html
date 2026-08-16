@@ -1,14 +1,11 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: auth(~{::title}, ~{::main})}">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>로그인</title>
-    <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
-
-<div class="wrap auth">
+<main>
 
     <h1 class="auth-title">학생 관리</h1>
 
@@ -19,10 +16,12 @@
     <form method="post" th:action="@{/login}">
         <div class="card">
             <label for="loginId">아이디</label>
-            <input type="text" id="loginId" name="loginId" autocomplete="username" autofocus>
+            <!-- 실패해도 아이디는 남긴다. 매번 다시 치게 만들 이유가 없다 -->
+            <input type="text" id="loginId" name="loginId" th:value="${param.loginId}"
+                   autocomplete="username" required autofocus>
 
             <label for="password">비밀번호</label>
-            <input type="password" id="password" name="password" autocomplete="current-password">
+            <input type="password" id="password" name="password" autocomplete="current-password" required>
         </div>
 
         <div class="actions">
@@ -30,6 +29,6 @@
         </div>
     </form>
 
-</div>
+</main>
 </body>
 </html>

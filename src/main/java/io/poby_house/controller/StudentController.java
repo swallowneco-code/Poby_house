@@ -32,6 +32,8 @@ public class StudentController {
         model.addAttribute("status", status);
         model.addAttribute("keyword", keyword);
         model.addAttribute("statuses", StudentStatus.values());
+        model.addAttribute("primaryActionHref", "/students/new");
+        model.addAttribute("primaryActionLabel", "+ 학생 등록");
         return "student/list";
     }
 

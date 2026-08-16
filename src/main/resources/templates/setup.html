@@ -1,14 +1,11 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: auth(~{::title}, ~{::main})}">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>최초 설정</title>
-    <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
-
-<div class="wrap auth">
+<main>
 
     <h1 class="auth-title">최초 설정</h1>
     <p class="hint auth-lead">
@@ -20,21 +17,23 @@
         <div class="card">
 
             <label for="name">이름</label>
-            <input type="text" id="name" th:field="*{name}" placeholder="포비" autofocus>
+            <input type="text" id="name" th:field="*{name}" placeholder="포비" required autofocus>
             <p class="error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></p>
 
             <label for="loginId">아이디</label>
-            <input type="text" id="loginId" th:field="*{loginId}" placeholder="poby" autocomplete="username">
+            <input type="text" id="loginId" th:field="*{loginId}" placeholder="poby"
+                   autocomplete="username" required>
             <p class="hint">영문·숫자·밑줄 4~20자</p>
             <p class="error" th:if="${#fields.hasErrors('loginId')}" th:errors="*{loginId}"></p>
 
             <label for="password">비밀번호</label>
-            <input type="password" id="password" th:field="*{password}" autocomplete="new-password">
+            <input type="password" id="password" th:field="*{password}" autocomplete="new-password" required>
             <p class="hint">8자 이상</p>
             <p class="error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></p>
 
             <label for="passwordConfirm">비밀번호 확인</label>
-            <input type="password" id="passwordConfirm" th:field="*{passwordConfirm}" autocomplete="new-password">
+            <input type="password" id="passwordConfirm" th:field="*{passwordConfirm}"
+                   autocomplete="new-password" required>
             <p class="error" th:if="${#fields.hasErrors('passwordConfirm')}" th:errors="*{passwordConfirm}"></p>
 
         </div>
@@ -44,6 +43,6 @@
         </div>
     </form>
 
-</div>
+</main>
 </body>
 </html>

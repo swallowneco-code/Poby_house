@@ -97,6 +97,7 @@ textarea { min-height: 96px; resize: vertical; }
 input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 .hint { font-size: 13px; color: var(--muted); margin-top: 4px; }
 .error { color: var(--danger); font-size: 13px; margin-top: 4px; }
+.req { color: var(--danger); }
 
 .actions { display: flex; gap: 8px; margin-top: 22px; }
 .btn {
