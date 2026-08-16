@@ -4,7 +4,15 @@ rem Stop with Ctrl+C.
 rem NOTE: keep this file ASCII-only. cmd.exe reads .bat in the OEM codepage,
 rem       so Korean text here corrupts command parsing.
 
-set "JAVA_HOME=%USERPROFILE%\.jdks\ms-17.0.20"
+rem Do not hardcode one JDK folder name. A pinned name breaks the moment the
+rem JDK is updated or reinstalled under a different vendor prefix.
+rem Use JAVA_HOME only if it already points somewhere real; otherwise fall back
+rem to the first Java 17 found under .jdks, and finally to whatever is on PATH.
+if defined JAVA_HOME if exist "%JAVA_HOME%\bin\java.exe" goto :javaready
+set "JAVA_HOME="
+for /d %%D in ("%USERPROFILE%\.jdks\*17*") do if exist "%%D\bin\java.exe" set "JAVA_HOME=%%D"
+:javaready
+
 cd /d "%~dp0"
 
 echo [1/2] starting MySQL container...

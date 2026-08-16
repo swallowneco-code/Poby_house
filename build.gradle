@@ -37,24 +37,6 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testAnnotationProcessor 'org.projectlombok:lombok'
 
-
-    // 쿼리 dsl
-    implementation "io.github.openfeign.querydsl:querydsl-jpa:6.11"
-    annotationProcessor "io.github.openfeign.querydsl:querydsl-apt:6.11:jpa"
-    testAnnotationProcessor "io.github.openfeign.querydsl:querydsl-apt:6.11:jpa"
-    annotationProcessor 'jakarta.persistence:jakarta.persistence-api'
-    testAnnotationProcessor 'jakarta.persistence:jakarta.persistence-api'
-
-    //S3
-    implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3'
-    implementation platform("io.awspring.cloud:spring-cloud-aws-dependencies:4.0.0")
-
-    //test 롬복 사용
-    testCompileOnly 'org.projectlombok:lombok'
-
-    //파일 유틸
-    implementation 'commons-io:commons-io:2.15.1'
-
     // .env 파일을 Spring Boot에서 읽어서 환경변수처럼 사용할 수 있게 해주는 라이브러리
     implementation 'me.paulschwarz:spring-dotenv:3.0.0'
 

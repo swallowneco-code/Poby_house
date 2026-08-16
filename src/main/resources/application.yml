@@ -11,23 +11,32 @@ spring:
     properties:
       hibernate:
         default_batch_fetch_size: 30
+    # 템플릿 렌더링 중 지연 로딩이 필요하다. 명시해 두지 않으면 기동 시 WARN 이 뜨고,
+    # 나중에 EAGER 를 LAZY 로 바꿀 때 화면이 조용히 깨진다.
+    open-in-view: true
   datasource:
     driver-class-name: net.sf.log4jdbc.sql.jdbcapi.DriverSpy
     url: jdbc:log4jdbc:mysql://${DB_URL}:${DB_PORT}/POBY
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
-  servlet:
-    multipart:
-      max-file-size: 100MB
-      max-request-size: 100MB
-      enabled: true
+  thymeleaf:
+    # 개발 중에는 템플릿을 고칠 때마다 재기동하지 않는다. 배포 프로파일에서 true 로 되돌린다.
+    cache: false
 
-  cloud:
-    aws:
-      credentials:
-        access-key: ${AWS_ACCESS_KEY}
-        secret-key: ${AWS_SECRET_KEY}
-      region:
-        static: ${AWS_REGION}
-      s3:
-        bucket: ${AWS_BUCKET}
+server:
+  servlet:
+    session:
+      # 수업 끝나고 폰으로 기록하는 것이 기본 사용 환경이다. 기본 30분은 그 도중에 끊긴다.
+      timeout: 8h
+  error:
+    # 에러 화면에 한국어 안내를 띄우려면 메시지가 넘어와야 한다.
+    include-message: always
+
+logging:
+  level:
+    root: info
+    io.poby_house: debug
+    # log4jdbc 의 sqlonly 로거는 바인딩 값을 SQL 에 인라인한다.
+    # 학생 실명과 학교가 그대로 로그에 찍히므로, 커스텀 포매터가 쓰는 로거 하나만 남기고 전부 끈다.
+    jdbc: off
+    jdbc.sqlonly: info
