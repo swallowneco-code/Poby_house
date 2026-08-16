@@ -35,7 +35,7 @@ public class TeacherController {
     public String list(Model model) {
         model.addAttribute("teachers", teacherService.findAll());
         model.addAttribute("primaryActionHref", "/admin/teachers/new");
-        model.addAttribute("primaryActionLabel", "+ 계정 추가");
+         model.addAttribute("primaryActionLabel", "+ 계정 추가");
         return "admin/teacher/list";
     }
 
