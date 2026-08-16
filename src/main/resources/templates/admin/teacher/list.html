@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(~{::title}, ~{::main}, ~{})}">
+<head>
+    <title>계정 관리</title>
+</head>
+<body>
+<main>
+
+    <h1>계정 관리</h1>
+
+    <ul class="students">
+        <li th:each="t : ${teachers}">
+            <div class="row">
+                <a class="rowmain" th:href="@{/admin/teachers/{id}/edit(id=${t.id})}">
+                    <span class="s-name" th:text="${t.name}">포비</span>
+                    <span class="s-sub" th:text="${t.role.label}">원장</span>
+                    <br>
+                    <span class="code" th:text="${t.loginId}">poby</span>
+                </a>
+                <span class="badge" th:classappend="${t.active} ? 'ACTIVE' : 'LEFT'"
+                      th:text="${t.active} ? '사용' : '중지'">사용</span>
+            </div>
+        </li>
+    </ul>
+
+    <p class="soon">
+        계정은 지우지 않고 <b>중지</b>합니다.
+        지난 기록에 누가 썼는지가 남아 있어야 퇴원생 리포트의 근거가 유지됩니다.
+    </p>
+
+</main>
+</body>
+</html>

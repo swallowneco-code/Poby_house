@@ -72,7 +72,7 @@
     <div class="wrap accountbar" th:if="${currentUserName}">
         <span class="who" th:text="${currentUserName}">포비</span>
         <span class="sep">·</span>
-        <a th:href="@{/account/password}">비밀번호 변경</a>
+        <a th:href="@{/account}">내 계정</a>
         <span class="sep">·</span>
         <form method="post" th:action="@{/logout}">
             <button type="submit" class="linkbtn">로그아웃</button>

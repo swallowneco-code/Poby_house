@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(~{::title}, ~{::main}, ~{})}">
+<head>
+    <title>내 계정</title>
+</head>
+<body>
+<main>
+
+    <h1>내 계정</h1>
+
+    <form method="post" th:action="@{/account}" th:object="${form}">
+        <div class="card">
+
+            <label for="name">이름 <span class="req">*</span></label>
+            <input type="text" id="name" th:field="*{name}" required autofocus>
+            <p class="error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></p>
+
+            <label>아이디</label>
+            <p class="code" th:text="${me.loginId}">poby</p>
+
+            <label>권한</label>
+            <p th:text="${me.role.label}">원장</p>
+            <p class="hint">아이디와 권한은 스스로 바꿀 수 없습니다.</p>
+
+        </div>
+
+        <div class="actions">
+            <button class="btn primary wide" type="submit">저장</button>
+        </div>
+    </form>
+
+    <div class="card">
+        <a class="btn" th:href="@{/account/password}">비밀번호 변경</a>
+    </div>
+
+</main>
+</body>
+</html>

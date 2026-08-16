@@ -1,6 +1,8 @@
 package io.poby_house.controller;
 
+import io.poby_house.domain.Teacher;
 import io.poby_house.dto.PasswordForm;
+import io.poby_house.dto.ProfileForm;
 import io.poby_house.security.TeacherPrincipal;
 import io.poby_house.service.TeacherService;
 import jakarta.validation.Valid;
@@ -21,6 +23,29 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class AccountController {
 
     private final TeacherService teacherService;
+
+    @GetMapping
+    public String profile(@AuthenticationPrincipal TeacherPrincipal principal, Model model) {
+        Teacher me = teacherService.get(principal.getId());
+        model.addAttribute("form", ProfileForm.from(me));
+        model.addAttribute("me", me);
+        return "account/profile";
+    }
+
+    @PostMapping
+    public String updateProfile(@AuthenticationPrincipal TeacherPrincipal principal,
+                                @Valid @ModelAttribute("form") ProfileForm form,
+                                BindingResult bindingResult,
+                                Model model,
+                                RedirectAttributes redirect) {
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("me", teacherService.get(principal.getId()));
+            return "account/profile";
+        }
+        teacherService.rename(principal.getId(), form.getName());
+        redirect.addFlashAttribute("message", "이름을 바꿨습니다. 다음 로그인부터 화면에 반영됩니다.");
+        return "redirect:/account";
+    }
 
     @GetMapping("/password")
     public String passwordForm(Model model) {
