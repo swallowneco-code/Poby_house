@@ -19,6 +19,11 @@ repositories {
 }
 
 dependencies {
+    // SQL 로그에 호출 위치를 붙이는 애스펙트가 이걸 쓴다.
+    // 지금까지는 spring-aspects 가 전이로 딸려와 우연히 동작했다.
+    // 상위 의존성이 한 번 바뀌면 아무 에러 없이 조용히 멈추므로 직접 적는다.
+    // Boot 4 에서 이름이 starter-aop 에서 starter-aspectj 로 바뀌었다.
+    implementation 'org.springframework.boot:spring-boot-starter-aspectj'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'

@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -32,7 +33,11 @@ public class Student {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** 외부로 나가는 문서에 실명 대신 쓰는 식별번호. S2026001 형태 */
+    /**
+     * 외부로 나가는 문서에 실명 대신 쓰는 식별번호. S2026001 형태.
+     * setter 를 만들지 않는다. 발급은 assignCode 로만 한다.
+     */
+    @Setter(AccessLevel.NONE)
     @Column(nullable = false, unique = true, length = 20)
     private String code;
 
@@ -69,6 +74,18 @@ public class Student {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    /**
+     * 식별번호는 발급할 때 한 번만 정한다.
+     * 외부 문서에 실명 대신 나가는 번호라 나중에 바뀌면 지난 문서와 어긋난다.
+     * 그래서 setter 대신 이 메서드를 두고, 이미 있으면 거절한다.
+     */
+    public void assignCode(String code) {
+        if (this.code != null) {
+            throw new IllegalStateException("식별번호는 다시 발급하지 않습니다. code=" + this.code);
+        }
+        this.code = code;
+    }
 
     /** 퇴원 처리 시 보관 만료일을 함께 세운다 */
     public void markLeft(LocalDate leftOn, String reason) {

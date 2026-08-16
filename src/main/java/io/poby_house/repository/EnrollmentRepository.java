@@ -1,6 +1,7 @@
 package io.poby_house.repository;
 
 import io.poby_house.domain.Enrollment;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -9,10 +10,12 @@ import java.util.Optional;
 
 public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
 
-    /** 현재 이 반에 소속된 배정 */
+    /** 현재 이 반에 소속된 배정. 화면에서 학생 정보를 바로 쓰므로 함께 가져온다 */
+    @EntityGraph(attributePaths = "student")
     List<Enrollment> findByClassGroupIdAndEndedOnIsNullOrderByStudentNameAsc(Long classGroupId);
 
-    /** 이 학생이 거쳐 온 반 */
+    /** 이 학생이 거쳐 온 반. 화면에서 반 이름을 쓰므로 함께 가져온다 */
+    @EntityGraph(attributePaths = "classGroup")
     List<Enrollment> findByStudentIdOrderByStartedOnDesc(Long studentId);
 
     /** 이 학생이 지금 어느 반이든 소속돼 있는가 */

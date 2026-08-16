@@ -80,9 +80,9 @@ public class TeacherService {
         }
         guardLastAdmin(teacher, form.getRole(), form.isActive());
 
-        teacher.setName(form.getName().trim());
-        teacher.setRole(form.getRole());
-        teacher.setActive(form.isActive());
+        teacher.rename(form.getName().trim());
+        teacher.changeRole(form.getRole());
+        teacher.changeActive(form.isActive());
     }
 
     /**
@@ -106,7 +106,7 @@ public class TeacherService {
 
     @Transactional
     public void changePassword(Long teacherId, String newRawPassword) {
-        get(teacherId).setPassword(passwordEncoder.encode(newRawPassword));
+        get(teacherId).changePassword(passwordEncoder.encode(newRawPassword));
     }
 
     /**
@@ -121,6 +121,6 @@ public class TeacherService {
     /** 이름만 바꾼다. 아이디는 바꾸지 않고, 비밀번호는 별도 화면에서 다룬다 */
     @Transactional
     public void rename(Long teacherId, String name) {
-        get(teacherId).setName(name.trim());
+        get(teacherId).rename(name.trim());
     }
 }

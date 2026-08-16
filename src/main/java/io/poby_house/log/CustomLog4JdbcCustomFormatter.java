@@ -5,18 +5,13 @@ import net.sf.log4jdbc.sql.Spy;
 import net.sf.log4jdbc.sql.resultsetcollector.ResultSetCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-
 
 import java.util.regex.Pattern;
 
 public class CustomLog4JdbcCustomFormatter implements SpyLogDelegator {
-    
-    
+
+
     private static final Logger sqlLogger = LoggerFactory.getLogger("jdbc.sqlonly");
-    private static final Logger logger = LoggerFactory.getLogger("user.log");
     private static final Pattern CLEAN_PATTERN = Pattern.compile("\\n[\\t\\s]*\\n");
     private static final Pattern SQL_KEYWORDS = Pattern.compile(
             "\\b(from|where|and|or|group by|order by|having|left join|right join|inner join|outer join|select|insert into|values|update|set)\\b",
@@ -40,11 +35,12 @@ public class CustomLog4JdbcCustomFormatter implements SpyLogDelegator {
         // 3. 콤마 뒤에도 개행 추가 (SELECT, SET 등)
         cleanedSql = cleanedSql.replaceAll(",\\s*", ",\n  ");
         
-        // 4. Mapper 정보 (ThreadLocal로부터)
-        String mapperId = JpaQueryContextHolder.get();
-        if (mapperId != null) {
-            cleanedSql = "/* " + mapperId + " */" + cleanedSql;
-            JpaQueryContextHolder.clear();
+        // 4. 어느 기능에서 나온 쿼리인지 (ThreadLocal 로부터)
+        //    여기서 지우면 한 메서드가 쿼리를 두 번 날렸을 때 두 번째부터 이름표가 사라진다.
+        //    정리는 이름표를 세운 쪽(JpaRepositoryMethodInterceptor)이 책임진다.
+        String source = JpaQueryContextHolder.get();
+        if (source != null) {
+            cleanedSql = "/* " + source + " */" + cleanedSql;
         }
         sqlLogger.info("[SQL] {} :::\n{}", methodCall, cleanedSql);
         

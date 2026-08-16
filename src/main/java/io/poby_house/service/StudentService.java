@@ -41,7 +41,7 @@ public class StudentService {
     @Transactional
     public Student create(StudentForm form) {
         Student student = new Student();
-        student.setCode(nextCode(form.getEnrolledOn()));
+        student.assignCode(nextCode(form.getEnrolledOn()));
         apply(student, form);
         return studentRepository.save(student);
     }
