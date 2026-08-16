@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<!--
+  학생 상세 화면에 붙는 개입 로그 섹션.
+
+  조각으로 빼 둔 이유: student/detail.html 은 여섯 기능이 함께 고치는 공용 파일이다.
+  마크업을 그 파일에 직접 넣으면 통합할 때마다 여섯 군데가 충돌한다. 통합 담당은 한 줄만 넣는다.
+
+  쓰는 쪽 (student/detail.html):
+    <th:block th:replace="~{intervention/detailSection :: section(${student}, ${interventions})}"></th:block>
+
+  StudentController.detail 이 모델에 넣어야 하는 것:
+    model.addAttribute("interventions", interventionService.historyOpenFirst(id));
+
+  방치된 날수 배지는 여기서 그리지 않는다. 그건 개입 화면의 일이다.
+  상세 화면에 그리려면 waitingDays 맵까지 모델에 넣어야 하고, 상세 화면이 그만큼 무거워진다.
+-->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<th:block th:fragment="section(student, interventions)">
+
+    <th:block th:replace="~{layout/record :: sectionHead('개입 로그', ${#lists.size(interventions)},
+                            @{/students/{id}/interventions(id=${student.id})}, '+ 개입')}"></th:block>
+
+    <!--
+      결과 미확인 개수. SpEL 선택 문법으로 센다. 개수만 쓰려고 모델 속성을 하나 더 늘리지 않는다.
+      result == null 만 센다. ONGOING(진행중)은 확인해 본 결과라 방치가 아니다.
+
+      th:with 를 th:if 와 같은 태그에 두면 안 된다. th:if 가 먼저 계산돼서
+      openCount 가 아직 없는 상태로 비교하게 된다. 그래서 한 겹 감싼다.
+    -->
+    <th:block th:with="openCount=${#lists.size(interventions.?[result == null])}">
+        <p class="q-note miss" th:if="${openCount > 0}">
+            <b th:text="'결과를 적지 않은 시도가 ' + ${openCount} + '개 있습니다.'">결과를 적지 않은 시도가 있습니다.</b>
+            <br>결과가 없으면 리포트 3-1 "통한 것 / 안 통한 것" 에 한 줄도 나가지 않습니다.
+            <a th:href="@{/students/{id}/interventions(id=${student.id})}">결과 적기</a>
+        </p>
+    </th:block>
+
+    <th:block th:if="${#lists.isEmpty(interventions)}">
+        <th:block th:replace="~{layout/record :: emptyRecord(
+            '아직 개입 기록이 없습니다.',
+            '무엇을 해결하려고 무엇을 해 봤는지 적어 두면 리포트 3-1 통한 것 / 안 통한 것이 여기서 나옵니다.')}"></th:block>
+    </th:block>
+
+    <!-- 최근 두 건까지. 목록이 미확인 먼저이므로 결과를 안 적은 것이 먼저 보인다 -->
+    <th:block th:each="iv, st : ${interventions}" th:if="${st.index < 2}">
+        <div th:replace="~{layout/record :: recordCard(${iv.triedOn},
+                          ${iv.result != null ? iv.problem + ' → ' + iv.result.label : iv.problem + ' → 결과 확인 필요'},
+                          ${iv.action})}"></div>
+    </th:block>
+
+    <p class="hint" th:if="${#lists.size(interventions) > 2}">
+        <a th:href="@{/students/{id}/interventions(id=${student.id})}"
+           th:text="'개입 ' + ${#lists.size(interventions)} + '건 전체 보기'">전체 보기</a>
+    </p>
+
+</th:block>
+
+</body>
+</html>

@@ -75,16 +75,35 @@ public class ClassGroupService {
         ClassGroup group = new ClassGroup();
         apply(group, form);
         if (teacherId != null) {
-            teacherRepository.findById(teacherId).ifPresent(group::setTeacher);
+            // 만든 사람을 일단 담당으로 둔다. 담당은 수정 화면에서 바꿀 수 있다.
+            // 강사를 한 번만 읽어 담당과 마지막 수정자에 함께 넣는다
+            teacherRepository.findById(teacherId).ifPresent(teacher -> {
+                group.setTeacher(teacher);
+                group.setUpdatedBy(teacher);
+            });
         }
         return classGroupRepository.save(group);
     }
 
     @Transactional
-    public ClassGroup update(Long id, ClassGroupForm form) {
+    public ClassGroup update(Long id, ClassGroupForm form, Long teacherId) {
         ClassGroup group = get(id);
         apply(group, form);
+        touch(group, teacherId);
         return group;
+    }
+
+    /**
+     * 마지막 수정자를 남긴다. 담당(teacher)과는 다른 값이다.
+     *
+     * 없는 강사 id 면 조용히 비워 둔다. 여기서 예외를 던지면
+     * 누가 고쳤는지 남기려다가 반 저장 자체가 막힌다.
+     */
+    private void touch(ClassGroup group, Long teacherId) {
+        if (teacherId == null) {
+            return;
+        }
+        teacherRepository.findById(teacherId).ifPresent(group::setUpdatedBy);
     }
 
     private void apply(ClassGroup group, ClassGroupForm form) {

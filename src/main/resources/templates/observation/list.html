@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(~{::title}, ~{::main}, ~{})}">
+<head>
+    <title th:text="${student.name} + ' - 관찰기록'">관찰기록</title>
+</head>
+<body>
+<main>
+
+    <h1 th:text="${student.name} + ' 관찰기록'">김민준 관찰기록</h1>
+    <p class="obs-sub">
+        <a th:href="@{/students/{id}(id=${student.id})}">
+            <span class="code" th:text="${student.code}">S2026001</span>
+            <span>학생 정보로</span>
+        </a>
+    </p>
+
+    <!--
+      기준선이 없다는 사실을 가장 먼저, 가장 크게 알린다.
+      들어온 시점의 스냅샷은 시간이 지나면 만들 수 없다. 이 배너를 아래로 내리거나
+      점잖은 hint 로 바꾸면 아무도 안 만들고, 리포트에 쓸 before 가 영영 없어진다.
+    -->
+    <div class="obs-alert" th:if="${baseline == null}">
+        <p class="obs-alert-title">입회 기준선이 없습니다</p>
+        <p class="obs-alert-body">
+            리포트의 <b>“이만큼 달라졌다”</b>는 들어왔을 때와 지금을 견주어 씁니다.
+            들어온 시점의 모습을 남겨 두지 않으면 견줄 <b>before 가 영영 없습니다.</b>
+            시간이 지나면 되돌릴 수 없으니 지금 5분만 쓰세요.
+        </p>
+        <a class="btn primary big"
+           th:href="@{/students/{id}/observations/new(id=${student.id},kind='BASELINE')}">+ 입회 기준선 남기기</a>
+    </div>
+
+    <!-- 기준선이 있으면 before/after 를 나란히 둔다. 이 비교가 리포트 본문의 초안이다 -->
+    <div class="obs-compare" th:if="${baseline != null}">
+        <p class="obs-compare-head">
+            <span class="obs-kind BASELINE">입회 기준선</span>
+            <span class="obs-cmp-when" th:text="${baseline.periodEnd}">2026-03-02</span>
+            <span class="obs-cmp-arrow" aria-hidden="true">&rarr;</span>
+            <span class="obs-cmp-when" th:text="${comparable} ? ${latest.periodEnd} : '—'">2026-08-16</span>
+            <span class="obs-cmp-tail" th:text="${comparable} ? ${latest.kind.label} : ''">정기</span>
+        </p>
+
+        <div th:if="${comparable}">
+            <div class="obs-cmp-row">
+                <span class="obs-cmp-label">이해도</span>
+                <span class="obs-cmp-val" th:text="${baseline.understanding} ?: '미표시'">2</span>
+                <span class="obs-cmp-arrow" aria-hidden="true">&rarr;</span>
+                <span class="obs-cmp-val" th:text="${latest.understanding} ?: '미표시'">4</span>
+                <span class="obs-delta unknown"
+                      th:if="${baseline.understanding == null or latest.understanding == null}">비교 불가</span>
+                <th:block th:unless="${baseline.understanding == null or latest.understanding == null}">
+                    <span class="obs-delta up" th:if="${latest.understanding > baseline.understanding}"
+                          th:text="'+' + ${latest.understanding - baseline.understanding} + ' 좋아짐'">+2 좋아짐</span>
+                    <span class="obs-delta down" th:if="${latest.understanding < baseline.understanding}"
+                          th:text="${latest.understanding - baseline.understanding} + ' 낮아짐'">-1 낮아짐</span>
+                    <span class="obs-delta same"
+                          th:if="${latest.understanding == baseline.understanding}">변화 없음</span>
+                </th:block>
+            </div>
+
+            <div class="obs-cmp-row">
+                <span class="obs-cmp-label">과제 수행도</span>
+                <span class="obs-cmp-val" th:text="${baseline.homeworkRate} ?: '미표시'">3</span>
+                <span class="obs-cmp-arrow" aria-hidden="true">&rarr;</span>
+                <span class="obs-cmp-val" th:text="${latest.homeworkRate} ?: '미표시'">3</span>
+                <span class="obs-delta unknown"
+                      th:if="${baseline.homeworkRate == null or latest.homeworkRate == null}">비교 불가</span>
+                <th:block th:unless="${baseline.homeworkRate == null or latest.homeworkRate == null}">
+                    <span class="obs-delta up" th:if="${latest.homeworkRate > baseline.homeworkRate}"
+                          th:text="'+' + ${latest.homeworkRate - baseline.homeworkRate} + ' 좋아짐'">+1 좋아짐</span>
+                    <span class="obs-delta down" th:if="${latest.homeworkRate < baseline.homeworkRate}"
+                          th:text="${latest.homeworkRate - baseline.homeworkRate} + ' 낮아짐'">-1 낮아짐</span>
+                    <span class="obs-delta same"
+                          th:if="${latest.homeworkRate == baseline.homeworkRate}">변화 없음</span>
+                </th:block>
+            </div>
+
+            <p class="obs-cmp-hint">
+                점수만으로는 리포트를 못 씁니다. 아래 카드의 <b>잘하는 점 · 보완할 점 · 아이 말</b>이 근거입니다.
+            </p>
+        </div>
+
+        <p class="obs-cmp-hint" th:unless="${comparable}">
+            아직 기준선 하나뿐입니다. 정기 관찰을 한 번 더 남기면 여기에 <b>점수 변화</b>가 보입니다.
+        </p>
+    </div>
+
+    <th:block th:replace="~{layout/record :: sectionHead('관찰기록', ${#lists.size(observations)},
+                            @{/students/{id}/observations/new(id=${student.id})}, '+ 관찰')}"></th:block>
+
+    <th:block th:if="${#lists.isEmpty(observations)}">
+        <th:block th:replace="~{layout/record :: emptyRecord(
+            '아직 관찰기록이 없습니다.',
+            '1~4주에 한 번 5분입니다. 이해도·과제 수행도와 아이 말 한 줄이 리포트 2장 성장 근거가 됩니다.')}"></th:block>
+    </th:block>
+
+    <th:block th:each="o : ${observations}">
+        <article class="rec-card">
+
+            <div class="obs-head">
+                <p class="rec-title" th:text="${o.periodStart} + ' ~ ' + ${o.periodEnd}">2026-03-02 ~ 2026-03-29</p>
+                <span class="obs-kind" th:classappend="${o.kind.name()}" th:text="${o.kind.label}">정기</span>
+                <a class="btn small quiet obs-edit"
+                   th:href="@{/observations/{oid}/edit(oid=${o.id})}">수정</a>
+            </div>
+
+            <div class="obs-scores">
+                <span class="obs-score">
+                    <span class="obs-score-label">이해도</span>
+                    <span class="obs-score-value" th:classappend="${o.understanding == null} ? 'none' : ''"
+                          th:text="${o.understanding != null} ? ${o.understanding} + ' / 5' : '미표시'">4 / 5</span>
+                </span>
+                <span class="obs-score">
+                    <span class="obs-score-label">과제</span>
+                    <span class="obs-score-value" th:classappend="${o.homeworkRate == null} ? 'none' : ''"
+                          th:text="${o.homeworkRate != null} ? ${o.homeworkRate} + ' / 5' : '미표시'">3 / 5</span>
+                </span>
+            </div>
+
+            <!-- 아이 말은 다듬지 않은 인용이다. 다른 칸과 같은 모양으로 두면 내 문장과 섞인다 -->
+            <div class="obs-field" th:if="${o.selfAssessment != null}">
+                <p class="obs-field-label">아이 말</p>
+                <blockquote class="obs-quote" th:text="${o.selfAssessment}">문제 읽는 게 어려워요</blockquote>
+            </div>
+
+            <div class="obs-field" th:if="${o.strength != null}">
+                <p class="obs-field-label">잘하는 점</p>
+                <p class="obs-note" th:text="${o.strength}"></p>
+            </div>
+
+            <div class="obs-field" th:if="${o.weakness != null}">
+                <p class="obs-field-label">보완할 점</p>
+                <p class="obs-note" th:text="${o.weakness}"></p>
+            </div>
+
+            <div class="obs-field" th:if="${o.attitudeNote != null}">
+                <p class="obs-field-label">태도·특이사항</p>
+                <p class="obs-note" th:text="${o.attitudeNote}"></p>
+            </div>
+
+            <div class="obs-field" th:if="${o.teacherComment != null}">
+                <p class="obs-field-label">종합 코멘트</p>
+                <p class="obs-note" th:text="${o.teacherComment}"></p>
+            </div>
+
+            <!-- 기간만 있고 속이 빈 기록은 리포트에서 쓸 수 없다. 그 사실을 카드에서 바로 알린다 -->
+            <p class="obs-thin"
+               th:if="${o.understanding == null and o.homeworkRate == null and o.selfAssessment == null
+                        and o.strength == null and o.weakness == null
+                        and o.attitudeNote == null and o.teacherComment == null}">
+                기간만 있고 내용이 비어 있습니다. 수정해서 한 줄이라도 채워 두세요.
+            </p>
+
+            <th:block th:replace="~{layout/record :: authorLine(${o.createdBy}, ${o.createdAt})}"></th:block>
+
+        </article>
+    </th:block>
+
+    <div class="actions">
+        <a class="btn wide" th:href="@{/students/{id}(id=${student.id})}">학생 정보</a>
+        <a class="btn primary wide"
+           th:href="@{/students/{id}/observations/new(id=${student.id})}">+ 관찰 남기기</a>
+    </div>
+
+</main>
+</body>
+</html>

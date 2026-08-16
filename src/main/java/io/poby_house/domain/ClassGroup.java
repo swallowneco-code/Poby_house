@@ -58,6 +58,14 @@ public class ClassGroup {
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
+    /**
+     * 마지막으로 이 반을 고친 강사. teacher(담당)와 다른 값이다.
+     * 담당이 아닌 사람이 시간표를 고쳐 놓으면 담당만 보고는 누가 바꿨는지 알 수 없다.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "updatedBy")
+    private Teacher updatedBy;
+
     /** "화목 15:00~16:30" 형태로 화면에 뿌린다 */
     public String getScheduleText() {
         StringBuilder sb = new StringBuilder();

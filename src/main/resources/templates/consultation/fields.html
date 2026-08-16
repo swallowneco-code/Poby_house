@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<!--
+  상담 입력 칸. 등록(목록 화면 안)과 수정 화면이 같은 칸을 쓴다.
+
+  두 화면에 복붙하지 않는 이유: 사실 / 걱정 / 약속 세 칸의 순서와 안내 문구가 이 기능의 전부라서,
+  한쪽만 고쳐지면 등록한 것과 수정한 것의 뜻이 달라진다.
+
+  쓰는 쪽 (반드시 th:object 가 걸린 <form> 안에서):
+    <th:block th:replace="~{consultation/fields :: notes}"></th:block>
+  모델에 types (ConsultationType.values()) 가 있어야 한다.
+-->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<th:block th:fragment="notes">
+
+    <label for="consultedOn">상담한 날 <span class="req">*</span></label>
+    <input type="date" id="consultedOn" th:field="*{consultedOn}" required>
+    <p class="error" th:if="${#fields.hasErrors('consultedOn')}" th:errors="*{consultedOn}"></p>
+
+    <label>경로</label>
+    <!-- select 로 두면 고를 때마다 두 번 탭이다. 셋뿐이라 칩으로 늘어놓는다 -->
+    <div class="cons-pick">
+        <label th:each="t : ${types}">
+            <input type="radio" th:field="*{type}" th:value="${t.name()}">
+            <span th:text="${t.label}">전화</span>
+        </label>
+    </div>
+
+    <label for="factNote">사실 <span class="cons-tag">오간 내용</span></label>
+    <textarea id="factNote" th:field="*{factNote}"
+              placeholder="2학기 중간 대비 진도와 최근 오답 유형을 설명했다."></textarea>
+
+    <label for="worryNote">걱정 <span class="cons-tag">학부모가 우려한 것</span></label>
+    <textarea id="worryNote" th:field="*{worryNote}"
+              placeholder="학교 서술형에서 점수가 깎이는 것을 걱정하셨다."></textarea>
+
+    <label for="promiseNote">약속 <span class="cons-tag">내가 하기로 한 것</span></label>
+    <textarea id="promiseNote" th:field="*{promiseNote}"
+              placeholder="2주간 서술형 답안을 문장으로 쓰게 하고, 3주 뒤에 결과를 알려 드리기로 했다."></textarea>
+    <p class="hint">
+        약속 칸은 다음 상담에서 가장 먼저 꺼내는 문장입니다.
+        <b>주어를 나로</b> 적어 두면 그때 그대로 읽을 수 있습니다.
+    </p>
+
+    <!-- 세 칸이 다 비었을 때. 어느 한 칸의 오류가 아니므로 세 칸 아래에 한 번만 띄운다 -->
+    <p class="error" th:if="${#fields.hasErrors('anyNoteFilled')}" th:errors="*{anyNoteFilled}"></p>
+
+    <p class="cons-warn">
+        <b>적지 않습니다</b><br>
+        가정 사정 · 형제 비교 · 경제 상황. 리포트에 쓸 수 없는 정보이고, 남겨서 좋을 것이 없습니다.<br>
+        보호자 연락처도 이 앱은 보관하지 않습니다.
+    </p>
+
+</th:block>
+
+</body>
+</html>

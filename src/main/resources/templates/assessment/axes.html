@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<!--
+  백지 4축을 읽기 전용으로 그리는 조각.
+
+  목록의 "가장 최근 백지" 요약과 평가 상세가 같은 모양을 써야 한다.
+  두 곳에 따로 그리면 점 다섯 개의 방향(5가 최상)이 화면마다 어긋날 수 있고,
+  그러면 지난 기록과 비교하는 사람이 매번 방향을 다시 확인해야 한다.
+
+  입력용 1~5 칩은 layout/record :: scaleInput 이다. 여기 것은 보여 주기 전용이다.
+  CSS 는 static/css/parts/assessment.css.
+-->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  쓰는 쪽:
+    <th:block th:replace="~{assessment/axes :: axes(${latestBlank})}"></th:block>
+-->
+<div class="as-axes" th:fragment="axes(a)">
+    <div th:replace="~{assessment/axes :: axisRow('용어', ${a.blankTerm})}"></div>
+    <div th:replace="~{assessment/axes :: axisRow('조건', ${a.blankCondition})}"></div>
+    <div th:replace="~{assessment/axes :: axisRow('예외', ${a.blankException})}"></div>
+    <div th:replace="~{assessment/axes :: axisRow('인과', ${a.blankCausality})}"></div>
+</div>
+
+
+<!--
+  한 축. 확인하지 않은 축(null)은 0점이 아니라 '미표시' 다.
+  0점처럼 보이면 안 본 것과 못 쓴 것이 리포트에서 같은 값이 된다.
+-->
+<div class="as-axis" th:fragment="axisRow(label, value)">
+    <span class="as-axis-name" th:text="${label}">용어</span>
+    <span class="as-axis-dots">
+        <span class="as-dot" th:each="n : ${#numbers.sequence(1, 5)}"
+              th:classappend="${value != null and value >= n} ? 'on'"></span>
+    </span>
+    <span class="as-axis-val" th:classappend="${value == null} ? 'none'"
+          th:text="${value != null} ? ${value} + ' / 5' : '미표시'">4 / 5</span>
+</div>
+
+</body>
+</html>

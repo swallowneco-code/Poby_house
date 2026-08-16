@@ -60,14 +60,27 @@
 <header th:fragment="topbar" class="top" xmlns:th="http://www.thymeleaf.org">
     <div class="wrap">
         <nav class="nav">
+            <!-- 홈이 맨 앞이다. 이 링크가 없으면 로고도 없어서 대시보드로 돌아갈 길이
+                 브라우저 뒤로가기뿐이었다 -->
+            <a th:href="@{/}" th:classappend="${activeNav == 'home'} ? 'on'">홈</a>
             <a th:href="@{/students}" th:classappend="${activeNav == 'students'} ? 'on'">학생</a>
             <a th:href="@{/classes}" th:classappend="${activeNav == 'classes'} ? 'on'">반</a>
             <a th:if="${isAdmin}" th:href="@{/admin/teachers}"
                th:classappend="${activeNav == 'teachers'} ? 'on'">계정</a>
+            <!-- 파기는 /admin 아래라 원장만 들어간다. 메뉴가 없으면 주소를 아는 사람만
+                 쓸 수 있는 화면이 된다 -->
+            <a th:if="${isAdmin}" th:href="@{/admin/purge}"
+               th:classappend="${activeNav == 'purge'} ? 'on'">파기</a>
         </nav>
-        <!-- 목록 화면만 우상단 버튼을 갖는다. 그 두 곳의 컨트롤러가 모델에 넣어 준다 -->
+        <!--
+          목록 화면만 우상단 버튼을 갖는다. 그 화면들의 컨트롤러가 모델에 넣어 준다.
+
+          주소는 반드시 @{...} 로 한 번 감싼다. 컨트롤러가 넣는 값은 "/students/new" 같은
+          맨 문자열이라, th:href="${primaryActionHref}" 로 두면 context-path 가 붙지 않는다.
+          배포는 context-path=/poby 로 뜨므로 그 상태에서는 세 목록 화면의 등록 버튼이 전부 404 였다.
+        -->
         <a th:if="${primaryActionHref}" class="btn primary"
-           th:href="${primaryActionHref}" th:text="${primaryActionLabel}">+ 등록</a>
+           th:href="@{${primaryActionHref}}" th:text="${primaryActionLabel}">+ 등록</a>
     </div>
     <div class="wrap accountbar" th:if="${currentUserName}">
         <span class="who" th:text="${currentUserName}">포비</span>

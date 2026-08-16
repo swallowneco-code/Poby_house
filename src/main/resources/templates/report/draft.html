@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<!--
+  퇴원생 리포트 초안.
+
+  완성 문서가 아니다. 사람이 읽고 다듬어 내보내는 초안이다.
+  그래서 없는 것을 채워 쓰지 않고, 비어 있으면 "무엇을 적으면 이 칸이 채워지는가" 를 대신 보여 준다.
+  그 안내가 이 앱에서 기록을 남기게 만드는 가장 강한 유도다.
+
+  화면·인쇄·텍스트 복사가 모두 ReportView 하나를 본다.
+  반출 모드에서 감춘 값(실명·학교)은 서비스에서 아예 담지 않으므로 여기서 다시 감출 필요가 없다.
+-->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(~{::title}, ~{::main}, ~{::script})}">
+<head>
+    <title th:text="${report.header.displayName} + ' - 리포트 초안'">리포트 초안</title>
+</head>
+<body>
+<main class="rp-report">
+
+    <h1>퇴원생 리포트 초안</h1>
+
+    <!--
+      지금 어느 모드인지. 인쇄물과 복사한 텍스트에도 같은 문장이 남는다.
+      이 줄을 도구 모음 안에 두면 인쇄할 때 사라져서, 종이만 보고는 실명이 든 문서인지 알 수 없다.
+    -->
+    <div class="rp-mode" th:classappend="${report.header.anon} ? 'anon' : 'named'">
+        <b th:text="${report.header.modeLabel}">내부 모드</b>
+        <span class="rp-mode-hint" th:unless="${report.header.anon}">
+            외부로 나갈 문서라면 아래에서 <b>외부 반출</b>로 바꾸세요.
+        </span>
+        <!--
+          문장을 여기 적지 않고 ReportHeader.modeCaution 에서 가져온다.
+          같은 문장이 '텍스트 복사'가 만든 평문에도 들어가야 하는데,
+          두 곳에 따로 적어 두면 한쪽만 고쳐져 화면과 평문이 어긋난다.
+        -->
+        <span class="rp-mode-hint" th:if="${report.header.anon}"
+              th:text="${report.header.modeCaution}">
+            본문에 실명이 적혀 있을 수 있습니다.
+        </span>
+    </div>
+
+    <!-- 도구 모음. 인쇄에서는 전부 사라진다 -->
+    <div class="rp-tools">
+
+        <div class="toolbar">
+            <a class="chip" th:classappend="${report.header.anon} ? '' : 'on'"
+               th:href="@{/students/{id}/report(id=${studentId},from=${report.header.from},to=${report.header.to})}">
+                내부용 · 실명
+            </a>
+            <a class="chip" th:classappend="${report.header.anon} ? 'on' : ''"
+               th:href="@{/students/{id}/report(id=${studentId},from=${report.header.from},to=${report.header.to},anon=true)}">
+                외부 반출 · 번호만
+            </a>
+        </div>
+
+        <form class="rp-filter" method="get"
+              th:action="@{/students/{id}/report(id=${studentId})}">
+            <label for="rpFrom">기간</label>
+            <div class="rp-filter-row">
+                <input type="date" id="rpFrom" name="from" th:value="${report.header.from}">
+                <span class="rp-tilde">~</span>
+                <input type="date" name="to" th:value="${report.header.to}">
+                <input type="hidden" name="anon" th:value="${report.header.anon}">
+                <button class="btn small primary" type="submit">적용</button>
+            </div>
+            <p class="hint">
+                비우고 적용하면 전체 기간(등록일 ~ <span th:text="${report.header.leftOn} != null ? '퇴원일' : '오늘'">오늘</span>)으로 돌아갑니다.
+            </p>
+        </form>
+
+        <div class="actions">
+            <a class="btn wide" th:href="@{/students/{id}(id=${studentId})}">학생으로</a>
+            <button type="button" class="btn wide" id="rpCopy">텍스트 복사</button>
+            <button type="button" class="btn wide primary" id="rpPrint">인쇄 · PDF</button>
+        </div>
+        <p class="rp-status" id="rpStatus" role="status"></p>
+
+        <!--
+          복사용 평문. 서비스가 만든 초안을 그대로 담는다.
+          화면의 HTML 을 긁어 만들지 않는 이유: 긁어 만들면 버튼 글자와 안내문까지 섞이고,
+          섹션을 하나 고칠 때마다 복사 결과가 조용히 달라진다.
+        -->
+        <textarea class="rp-text" id="rpText" readonly aria-label="리포트 평문"
+                  th:text="${report.plainText}"></textarea>
+    </div>
+
+    <div class="card rp-head">
+        <dl class="detail">
+            <div><dt th:text="${report.header.anon} ? '식별번호' : '이름'">이름</dt>
+                <dd th:text="${report.header.displayName}">김민준</dd></div>
+            <div th:unless="${report.header.anon}"><dt>식별번호</dt>
+                <dd class="code" th:text="${report.header.code}">S2026001</dd></div>
+            <div th:unless="${report.header.anon}"><dt>학교</dt>
+                <dd th:text="${report.header.school} ?: '—'">대치초</dd></div>
+            <div><dt>학년</dt><dd th:text="${report.header.grade} ?: '—'">초6</dd></div>
+            <div><dt>상태</dt><dd th:text="${report.header.statusLabel} ?: '—'">퇴원</dd></div>
+            <div><dt>등록일</dt><dd th:text="${report.header.enrolledOn} ?: '—'">2026-03-02</dd></div>
+            <div th:if="${report.header.leftOn != null}"><dt>퇴원일</dt>
+                <dd th:text="${report.header.leftOn}">2027-08-18</dd></div>
+            <div th:if="${report.header.leaveReason != null}"><dt>퇴원 사유</dt>
+                <dd th:text="${report.header.leaveReason}">이사</dd></div>
+            <div><dt>기간</dt>
+                <dd th:text="${report.header.from} + ' ~ ' + ${report.header.to}
+                             + ' (' + ${report.togetherTime.spanText} + ')'">2026-03-02 ~ 2027-08-18</dd></div>
+            <div><dt>작성일</dt><dd th:text="${report.header.generatedOn}">2026-08-18</dd></div>
+        </dl>
+        <p class="rp-note">
+            이 문서는 <b>초안</b>입니다. 기록된 사실만 배치했습니다. 기록에 없는 것은 비워 두었습니다.
+        </p>
+    </div>
+
+    <!-- =========================================================
+         1. 함께한 시간
+         ========================================================= -->
+    <h2 class="sec">1. 함께한 시간</h2>
+
+    <div class="card">
+        <p class="rp-rate" th:unless="${report.togetherTime.rateUnknown}">
+            <b th:text="${report.togetherTime.attendanceRate} + '%'">92%</b>
+            <span>출석률</span>
+        </p>
+        <p class="rp-rate none" th:if="${report.togetherTime.rateUnknown}">
+            <b>출석률 셀 수 없음</b>
+            <span>출결을 표시한 회차가 없습니다</span>
+        </p>
+        <p class="rp-note" th:unless="${report.togetherTime.rateUnknown}">
+            출석 + 지각 + 보강 <b th:text="${report.togetherTime.attended}">12</b> /
+            <b th:text="${report.togetherTime.attendable}">13</b>회.
+            휴원은 셈에서 뺐습니다(결석과 섞으면 쉬었던 기간 때문에 출석률이 부당하게 깎입니다).
+        </p>
+
+        <ul class="rp-stat">
+            <li th:each="c : ${report.togetherTime.counts}">
+                <span class="rp-stat-label" th:text="${c.label}">출석</span>
+                <span class="rp-stat-value" th:text="${c.count} + '회'">0회</span>
+            </li>
+        </ul>
+
+        <dl class="detail">
+            <div><dt>반</dt>
+                <dd th:text="${#lists.isEmpty(report.togetherTime.classNames)
+                              ? '—' : #strings.listJoin(report.togetherTime.classNames, ', ')}">화목 A반</dd></div>
+            <div><dt>회차</dt>
+                <dd th:text="'반이 열었던 ' + ${report.togetherTime.heldSessions} + '회 중 출결을 표시한 '
+                             + ${report.togetherTime.recordedSessions} + '회'">0회</dd></div>
+        </dl>
+
+        <p class="rp-warn thin" th:if="${report.togetherTime.unrecordedSessions > 0}">
+            출결을 표시하지 않은 회차가
+            <b th:text="${report.togetherTime.unrecordedSessions} + '회'">2회</b> 있습니다.
+            그 회차는 출석률 계산에서 빠졌습니다. 회차 화면에서 출결을 표시하면 이 숫자가 채워집니다.
+        </p>
+    </div>
+
+    <!-- =========================================================
+         2. 무엇을 했나
+         ========================================================= -->
+    <h2 class="sec">
+        2. 무엇을 했나
+        <span class="cnt" th:text="${report.whatWeDid.loggedSessions} + '회 기록'">0회 기록</span>
+    </h2>
+
+    <th:block th:if="${#lists.isEmpty(report.whatWeDid.spans)}">
+        <th:block th:replace="~{layout/record :: emptyRecord(
+            '진도기록이 없습니다.',
+            '회차마다 진도기록을 남기면 교재별 진도 흐름이 이 칸에 채워집니다. 리포트에서 가장 먼저 채워지는 칸입니다.')}"></th:block>
+    </th:block>
+
+    <article class="rec-card" th:each="s : ${report.whatWeDid.spans}">
+        <p class="rec-title" th:text="${s.textbook} ?: '교재 미기재'">쎈수학 5-2</p>
+        <p class="rec-meta"
+           th:text="${s.from} + ' ~ ' + ${s.to} + ' · ' + ${s.sessions} + '회'">2026-03-02 ~ 2026-05-01 · 12회</p>
+        <p class="rec-body" th:if="${s.rangeText}" th:text="${s.rangeText}">p.1~10 → p.120~131</p>
+    </article>
+
+    <div class="card">
+        <p class="rp-sub">과제 수행</p>
+        <p class="rp-empty-line" th:if="${report.whatWeDid.homeworkRecorded == 0}">
+            기록 없음 — 진도기록에서 지난 과제 상태(다 함 / 일부 / 안 함)를 표시하면 이 칸이 채워집니다.
+        </p>
+        <ul class="rp-dist" th:if="${report.whatWeDid.homeworkRecorded > 0}">
+            <li th:each="h : ${report.whatWeDid.homework}">
+                <span class="rp-dist-label" th:text="${h.label}">다 함</span>
+                <span class="rp-bar">
+                    <span class="rp-bar-fill" th:style="'width:' + ${h.percent} + '%'"></span>
+                </span>
+                <span class="rp-dist-value" th:text="${h.count} + '회 · ' + ${h.percent} + '%'">0회 · 0%</span>
+            </li>
+        </ul>
+        <p class="rp-note" th:if="${report.whatWeDid.homeworkUnrecorded > 0}">
+            과제 상태를 적지 않은 회차 <b th:text="${report.whatWeDid.homeworkUnrecorded} + '회'">3회</b>는 분포에서 빠졌습니다.
+        </p>
+    </div>
+
+    <th:block th:if="${!#lists.isEmpty(report.whatWeDid.notes)}">
+        <p class="rp-sub">
+            수업 중 메모
+            <span class="cnt" th:text="${#lists.size(report.whatWeDid.notes)}">0</span>
+        </p>
+        <th:block th:each="n : ${report.whatWeDid.notes}">
+            <div th:replace="~{layout/record :: recordCard(${n.on}, null, ${n.note})}"></div>
+        </th:block>
+    </th:block>
+
+    <!-- =========================================================
+         3. 무엇이 달라졌나
+         ========================================================= -->
+    <h2 class="sec">
+        3. 무엇이 달라졌나
+        <span class="cnt" th:text="${report.whatChanged.observationCount} + '건 관찰'">0건 관찰</span>
+    </h2>
+
+    <div class="rp-warn" th:if="${report.whatChanged.warning}">
+        <p class="rp-warn-msg" th:text="${report.whatChanged.warning}">입회 기준선이 없어 변화를 증명할 수 없습니다.</p>
+        <p class="rp-warn-hint" th:text="${report.whatChanged.hint}"></p>
+    </div>
+
+    <div class="card">
+        <div class="rp-delta">
+            <span class="rp-delta-label" th:text="${report.whatChanged.understanding.label}">이해도</span>
+            <span class="rp-delta-value"
+                  th:classappend="${report.whatChanged.understanding.direction}"
+                  th:text="${report.whatChanged.understanding.text}">3 → 4 (↑1)</span>
+        </div>
+        <div class="rp-delta">
+            <span class="rp-delta-label" th:text="${report.whatChanged.homeworkRate.label}">과제 수행도</span>
+            <span class="rp-delta-value"
+                  th:classappend="${report.whatChanged.homeworkRate.direction}"
+                  th:text="${report.whatChanged.homeworkRate.text}">2 → 4 (↑2)</span>
+        </div>
+        <p class="rp-note">1~5 점이고 5가 가장 좋습니다. 확인하지 않은 점수는 0으로 세지 않고 비교에서 뺍니다.</p>
+    </div>
+
+    <!-- 주의 문구를 삼항연산자로 인자에 끼워 넣지 않는다.
+         fragment 표현식 안의 콜론은 template::fragment 구분자와 헷갈리기 쉬운 자리다 -->
+    <th:block th:if="${report.whatChanged.baseline != null and report.whatChanged.baselineBeforePeriod}">
+        <div th:replace="~{::pointCard('입회 기준선', ${report.whatChanged.baseline},
+                          '조회 기간보다 앞선 기록입니다. 입회 시점이라 기간 필터로 자르지 않습니다.')}"></div>
+    </th:block>
+    <th:block th:if="${report.whatChanged.baseline != null and !report.whatChanged.baselineBeforePeriod}">
+        <div th:replace="~{::pointCard('입회 기준선', ${report.whatChanged.baseline}, null)}"></div>
+    </th:block>
+
+    <th:block th:if="${report.whatChanged.earliest != null}">
+        <div th:replace="~{::pointCard('가장 이른 관찰 (기준선 아님)', ${report.whatChanged.earliest},
+                          '기준선 대신 쓰지 않습니다. 입회 시점이 아니어서 성장 폭이 실제보다 작게 나옵니다.')}"></div>
+    </th:block>
+
+    <th:block th:if="${report.whatChanged.latest != null and !report.whatChanged.onlyOneObservation}">
+        <div th:replace="~{::pointCard('최신 관찰', ${report.whatChanged.latest}, null)}"></div>
+    </th:block>
+
+    <th:block th:if="${report.whatChanged.observationCount == 0 and report.whatChanged.baseline == null}">
+        <th:block th:replace="~{layout/record :: emptyRecord(
+            '관찰기록이 없습니다.',
+            '입회 직후에 관찰기록을 종류 입회 기준선으로 한 건 남겨 두면, 퇴원할 때 무엇이 달라졌는지를 숫자로 보일 수 있습니다.')}"></th:block>
+    </th:block>
+
+    <!-- =========================================================
+         4. 통한 것 / 안 통한 것
+         ========================================================= -->
+    <h2 class="sec">
+        4. 통한 것 / 안 통한 것
+        <span class="cnt" th:text="${report.interventions.total}">0</span>
+    </h2>
+
+    <p class="rp-count-line" th:text="${report.interventions.countLine}">통한 것 0 · 일부 통한 것 0</p>
+
+    <th:block th:if="${report.interventions.total == 0}">
+        <th:block th:replace="~{layout/record :: emptyRecord(
+            '개입 기록이 없습니다.',
+            '무엇을 해결하려 무엇을 시도했고 그래서 어떻게 됐는지를 남기면, 이 리포트에서 가장 값이 큰 칸이 채워집니다.')}"></th:block>
+    </th:block>
+
+    <p class="rp-note" th:if="${report.interventions.evidenceMissing > 0}">
+        결과는 적혔지만 근거가 비어 있는 항목이
+        <b th:text="${report.interventions.evidenceMissing} + '건'">1건</b> 있습니다. 근거 없는 결과는 리포트에 쓸 수 없습니다.
+    </p>
+
+    <div class="rp-group" th:each="g : ${report.interventions.groups}" th:unless="${g.empty}">
+        <p class="rp-group-label">
+            <span th:text="${g.label}">통한 것</span>
+            <span class="cnt" th:text="${g.count}">0</span>
+        </p>
+        <p class="rp-group-mean" th:text="${g.meaning}"></p>
+
+        <article class="rec-card" th:each="i : ${g.items}">
+            <p class="rec-title" th:text="${i.problem} ?: '—'">과제를 안 해 온다</p>
+            <p class="rec-meta">
+                <span th:text="${i.triedOn} + ' 시도'">2026-05-01 시도</span>
+                <span th:if="${i.reviewedOn}" th:text="' · ' + ${i.reviewedOn} + ' 확인'"> · 확인</span>
+                <span th:if="${i.watchedDays != null}"
+                      th:text="' (' + ${i.watchedDays} + '일 지켜봄)'"> (14일 지켜봄)</span>
+                <span th:text="' · ' + ${i.resultLabel}"> · 통함</span>
+            </p>
+            <p class="rec-body" th:text="${i.action} ?: '—'">수업 끝에 5분 남겨 첫 문제를 함께 시작</p>
+            <p class="rp-evidence" th:if="${i.resultNote}">
+                <b>근거</b> <span th:text="${i.resultNote}"></span>
+            </p>
+            <p class="rp-evidence missing" th:unless="${i.resultNote}">
+                근거가 없습니다. 어떻게 알았는지를 적으면 이 항목을 리포트에 쓸 수 있습니다.
+            </p>
+            <p class="rec-author" th:if="${i.authorName}" th:text="${i.authorName} + ' 기록'">포비 기록</p>
+        </article>
+    </div>
+
+    <!-- =========================================================
+         5. 약한 지점과 처방
+         ========================================================= -->
+    <h2 class="sec">
+        5. 약한 지점과 처방
+        <span class="cnt" th:text="${report.weakSpots.assessmentCount} + '건 평가'">0건 평가</span>
+    </h2>
+
+    <th:block th:if="${#lists.isEmpty(report.weakSpots.tags)}">
+        <th:block th:replace="~{layout/record :: emptyRecord(
+            '오답 유형 태그가 없습니다.',
+            '평가를 남길 때 오답을 유형(계산·조건·개념·적용·시간·무시도·서술)으로 세어 두면, 무엇이 약한지가 숫자로 나오고 그것이 곧 처방이 됩니다.')}"></th:block>
+    </th:block>
+
+    <div class="card" th:if="${!#lists.isEmpty(report.weakSpots.tags)}">
+        <p class="rp-sub">
+            오답 유형
+            <span class="cnt" th:text="${report.weakSpots.totalErrors} + '개'">0개</span>
+        </p>
+        <p class="rp-top" th:if="${!#lists.isEmpty(report.weakSpots.topLabels)}">
+            가장 많은 유형:
+            <b th:text="${#strings.listJoin(report.weakSpots.topLabels, ', ')}">계산, 조건</b>
+        </p>
+        <ul class="rp-dist">
+            <li th:each="t : ${report.weakSpots.tags}" th:classappend="${t.top} ? 'top' : ''">
+                <span class="rp-dist-label" th:text="${t.label}">계산</span>
+                <span class="rp-bar">
+                    <span class="rp-bar-fill" th:style="'width:' + ${t.width} + '%'"></span>
+                </span>
+                <span class="rp-dist-value" th:text="${t.count} + '개 · ' + ${t.share} + '%'">0개 · 0%</span>
+            </li>
+        </ul>
+    </div>
+
+    <th:block th:if="${!#lists.isEmpty(report.weakSpots.blanks)}">
+        <p class="rp-sub">백지 테스트 4축</p>
+        <article class="rec-card" th:each="b : ${report.weakSpots.blanks}">
+            <p class="rec-title" th:text="${b.unitName} ?: '단원 미기재'">분수의 나눗셈</p>
+            <p class="rec-meta" th:text="${b.assessedOn}">2026-05-01</p>
+            <ul class="rp-axes">
+                <li><span>용어</span><b th:text="${b.term} ?: '—'">3</b></li>
+                <li><span>조건</span><b th:text="${b.condition} ?: '—'">2</b></li>
+                <li><span>예외</span><b th:text="${b.exception} ?: '—'">2</b></li>
+                <li><span>인과</span><b th:text="${b.causality} ?: '—'">4</b></li>
+            </ul>
+            <p class="rp-quote" th:if="${b.quote}" th:text="'“' + ${b.quote} + '”'"></p>
+        </article>
+    </th:block>
+
+    <th:block th:if="${!#lists.isEmpty(report.weakSpots.weakUnits)}">
+        <p class="rp-sub">
+            약한 단원
+            <span class="cnt" th:text="${#lists.size(report.weakSpots.weakUnits)}">0</span>
+        </p>
+        <article class="rec-card" th:each="u : ${report.weakSpots.weakUnits}">
+            <p class="rec-title" th:text="${u.unitName} ?: '단원 미기재'">비와 비율</p>
+            <p class="rec-meta">
+                <span th:text="${u.assessedOn}">2026-05-01</span>
+                <span th:text="' · ' + ${u.statusLabel}"> · △ 약함</span>
+                <span th:if="${u.scoreText}" th:text="' · ' + ${u.scoreText}"> · 12 / 20</span>
+                <!-- 0% 도 보여야 한다. ${u.percent} 만 쓰면 숫자 0 이 거짓으로 취급돼 사라진다 -->
+                <span th:if="${u.percent != null}" th:text="' (' + ${u.percent} + '%)'"> (60%)</span>
+            </p>
+            <p class="rec-body" th:if="${u.note}" th:text="${u.note}"></p>
+        </article>
+    </th:block>
+
+    <th:block th:if="${!#lists.isEmpty(report.weakSpots.quotes)}">
+        <p class="rp-sub">아이가 쓴 문장</p>
+        <article class="rec-card" th:each="q : ${report.weakSpots.quotes}">
+            <p class="rec-meta">
+                <span th:text="${q.assessedOn}">2026-05-01</span>
+                <span th:if="${q.unitName}" th:text="' · ' + ${q.unitName}"></span>
+            </p>
+            <p class="rp-quote" th:text="'“' + ${q.quote} + '”'"></p>
+        </article>
+    </th:block>
+
+    <!-- =========================================================
+         6. 장면 — 요약하지 않는다. 적힌 문장 그대로 낸다
+         ========================================================= -->
+    <h2 class="sec">
+        6. 장면
+        <span class="cnt" th:text="${#lists.size(report.scenes)}">0</span>
+    </h2>
+
+    <th:block th:if="${#lists.isEmpty(report.scenes)}">
+        <th:block th:replace="~{layout/record :: emptyRecord(
+            '장면 기록이 없습니다.',
+            '수업 중 한 장면(무엇을 했고 무슨 말을 했나)을 적어 두면 마지막 편지에 쓸 재료가 됩니다. 시험지에는 남지 않는 기록입니다.')}"></th:block>
+    </th:block>
+
+    <article class="rec-card" th:each="s : ${report.scenes}">
+        <p class="rec-title" th:text="${s.occurredOn}">2026-05-01</p>
+        <p class="rec-meta" th:if="${s.situation}" th:text="${s.situation}">쉬는 시간에</p>
+        <p class="rec-body" th:text="${s.content} ?: '—'">남아서 3번을 다시 풀었다.</p>
+        <p class="rec-author" th:if="${s.authorName}" th:text="${s.authorName} + ' 기록'">포비 기록</p>
+    </article>
+
+    <!-- =========================================================
+         7. 상담에서 한 약속
+         ========================================================= -->
+    <h2 class="sec">
+        7. 상담에서 한 약속
+        <span class="cnt" th:text="${#lists.size(report.promises.items)}">0</span>
+    </h2>
+
+    <th:block th:if="${#lists.isEmpty(report.promises.items)}">
+        <th:block th:replace="~{layout/record :: emptyRecord(
+            '약속 기록이 없습니다.',
+            '상담일지의 약속 칸에 내가 하기로 한 것을 적으면, 그것을 지켰는지가 이 리포트에 남습니다.')}"></th:block>
+    </th:block>
+
+    <article class="rec-card" th:each="p : ${report.promises.items}">
+        <p class="rec-title" th:text="${p.promiseNote}">주 2회 오답 확인을 문자로 알리기</p>
+        <p class="rec-meta">
+            <span th:text="${p.consultedOn}">2026-05-01</span>
+            <span th:if="${p.typeLabel}" th:text="' · ' + ${p.typeLabel}"> · 전화</span>
+        </p>
+        <p class="rec-body" th:if="${p.worryNote}" th:text="'(그때 걱정) ' + ${p.worryNote}"></p>
+        <p class="rec-author" th:if="${p.authorName}" th:text="${p.authorName} + ' 기록'">포비 기록</p>
+    </article>
+
+    <p class="rp-note" th:if="${report.promises.withoutPromise > 0}">
+        약속 칸이 빈 상담이 <b th:text="${report.promises.withoutPromise} + '건'">1건</b> 있습니다.
+    </p>
+
+    <div class="actions rp-tools">
+        <a class="btn wide" th:href="@{/students/{id}(id=${studentId})}">학생으로</a>
+        <button type="button" class="btn wide primary" id="rpPrintBottom">인쇄 · PDF</button>
+    </div>
+
+</main>
+
+<!--
+  관찰 한 시점 카드. 기준선 · 가장 이른 관찰 · 최신 관찰이 같은 모양이어야 비교가 눈에 들어온다.
+  main 밖에 두는 이유: 레이아웃이 ~{::main} 만 가져가므로 여기 있는 것은 화면에 그려지지 않는다.
+  fragment 정의를 main 안에 두면 정의 자리에서 한 번 더 렌더된다.
+-->
+<article class="rec-card rp-point" th:fragment="pointCard(title, p, caution)">
+    <p class="rec-title">
+        <span th:text="${title}">입회 기준선</span>
+        <span class="rp-point-date"
+              th:text="${p.periodStart} + ' ~ ' + ${p.periodEnd}">2026-03-02 ~ 2026-03-30</span>
+    </p>
+    <p class="rp-point-caution" th:if="${caution}" th:text="${caution}"></p>
+    <ul class="rp-axes">
+        <li><span>이해도</span><b th:text="${p.understanding} ?: '—'">3</b></li>
+        <li><span>과제 수행도</span><b th:text="${p.homeworkRate} ?: '—'">2</b></li>
+    </ul>
+    <dl class="detail">
+        <div th:if="${p.strength}"><dt>잘하는 점</dt><dd th:text="${p.strength}"></dd></div>
+        <div th:if="${p.weakness}"><dt>보완할 점</dt><dd th:text="${p.weakness}"></dd></div>
+        <div th:if="${p.attitudeNote}"><dt>태도</dt><dd th:text="${p.attitudeNote}"></dd></div>
+        <div th:if="${p.teacherComment}"><dt>코멘트</dt><dd th:text="${p.teacherComment}"></dd></div>
+    </dl>
+    <p class="rp-quote" th:if="${p.selfAssessment}" th:text="'“' + ${p.selfAssessment} + '”'"></p>
+    <p class="rec-author" th:if="${p.authorName}" th:text="${p.authorName} + ' 기록'">포비 기록</p>
+</article>
+
+<script>
+    // 초안을 문서 편집기로 옮기는 두 가지 길: 클립보드와 인쇄.
+    // 라이브러리는 쓰지 않는다.
+    (function () {
+        var text = document.getElementById('rpText');
+        var status = document.getElementById('rpStatus');
+        var copyBtn = document.getElementById('rpCopy');
+
+        function say(message, cls) {
+            status.textContent = message;
+            status.className = 'rp-status' + (cls ? ' ' + cls : '');
+        }
+
+        // navigator.clipboard 는 https 나 localhost 에서만 있다.
+        // 사내망 http 로 띄우면 아예 undefined 라서, 실패를 전제로 폴백을 항상 준비한다.
+        function fallback() {
+            text.classList.add('on');
+            text.focus();
+            text.select();
+            var copied = false;
+            try {
+                copied = document.execCommand('copy');
+            } catch (e) {
+                copied = false;
+            }
+            if (copied) {
+                say('복사했습니다. 문서 편집기에 붙여 넣으세요.', 'ok');
+            } else {
+                say('자동 복사가 막혔습니다. 아래 상자가 선택돼 있으니 Ctrl+C (폰은 길게 눌러 복사)를 누르세요.', 'warn');
+            }
+        }
+
+        if (copyBtn) {
+            copyBtn.addEventListener('click', function () {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text.value).then(function () {
+                        say('복사했습니다. 문서 편집기에 붙여 넣으세요.', 'ok');
+                    }, fallback);
+                } else {
+                    fallback();
+                }
+            });
+        }
+
+        ['rpPrint', 'rpPrintBottom'].forEach(function (id) {
+            var btn = document.getElementById(id);
+            if (btn) {
+                btn.addEventListener('click', function () {
+                    window.print();
+                });
+            }
+        });
+    })();
+</script>
+</body>
+</html>

@@ -25,6 +25,21 @@
         <a class="btn primary wide" th:href="@{/classes/{id}/edit(id=${group.id})}">수정</a>
     </div>
 
+    <p class="ops-updated" th:if="${group.updatedBy != null}"
+       th:text="'마지막 수정: ' + ${group.updatedBy.name}">마지막 수정: 포비</p>
+
+    <!--
+      회차 진입점은 소속 학생 목록보다 위에 둔다.
+      매일 열리는 화면이 이것 하나뿐인데, 학생 목록과 배정 후보 아래로 내려가면
+      폰에서 스크롤을 두 번 해야 닿는다.
+      링크는 한 자리에만 둔다. 화면 아래에 같은 버튼을 또 두면 어느 쪽이 최신인지 헷갈린다.
+    -->
+    <h2 class="sec">수업 회차</h2>
+    <div class="actions">
+        <a class="btn primary big wide" th:href="@{/classes/{id}/sessions(id=${group.id})}">회차 기록 (출결 · 진도)</a>
+    </div>
+    <p class="hint">오늘 수업을 적으려면 여기로 들어가 날짜를 그대로 두고 <b>기록하기</b>를 누르세요.</p>
+
     <h2 class="sec">소속 학생 <span class="cnt" th:text="${#lists.size(enrollments)}">0</span></h2>
 
     <p class="empty" th:if="${#lists.isEmpty(enrollments)}">
@@ -40,7 +55,15 @@
                     <br>
                     <span class="code" th:text="${e.student.code} + ' · ' + ${e.startedOn} + ' 배정'">S2026001</span>
                 </a>
-                <form method="post" th:action="@{/classes/{id}/students/{eid}/release(id=${group.id},eid=${e.id})}">
+                <!--
+                  확인을 붙인다. 이 버튼은 학생 이름 링크 바로 옆에 붙은 36px 짜리라
+                  폰에서 이름을 누르려다 잘못 닿기 쉽다. 그런데 한 번 빼고 다시 넣으면
+                  배정일이 오늘로 찍힌 새 배정이 생겨 원래 배정 기간이 둘로 갈라지고,
+                  리포트 1장 '함께한 시간' 의 반 목록이 지저분해진다.
+                  같은 성격의 '회차 숨기기' 도 확인과 되돌리는 길 안내를 둘 다 갖는다.
+                -->
+                <form method="post" th:action="@{/classes/{id}/students/{eid}/release(id=${group.id},eid=${e.id})}"
+                      onsubmit="return confirm('이 학생을 반에서 뺄까요?\n\n지난 기록은 그대로 남습니다. 다시 넣으면 배정일이 오늘로 찍힙니다.');">
                     <button type="submit" class="btn small quiet">빼기</button>
                 </form>
             </div>
@@ -51,7 +74,13 @@
 
     <div class="card" th:if="${not #lists.isEmpty(assignable)}">
         <div class="searchrow">
-            <input type="search" id="stuSearch" placeholder="이름으로 검색 후 엔터" autocomplete="off" autofocus>
+            <!--
+              autofocus 를 두지 않는다. 이 입력은 소속 학생 목록 아래에 있어서,
+              페이지가 열릴 때 초점이 여기로 가면 브라우저가 화면을 여기까지 스크롤하고 키보드까지 올린다.
+              그러면 폰에서 반 화면을 열었을 때 맨 위의 '회차 기록' 버튼이 보이지 않는다.
+              PC 에서만 아래 script 가 초점을 옮긴다.
+            -->
+            <input type="search" id="stuSearch" placeholder="이름으로 검색 후 엔터" autocomplete="off">
             <button type="button" class="btn primary" id="quickAdd" disabled>추가</button>
         </div>
         <p class="pickhint" id="pickHint"></p>
@@ -79,10 +108,6 @@
     <p class="soon" th:if="${#lists.isEmpty(assignable)}">
         추가할 학생이 없습니다. 재원생 전원이 이미 어느 반엔가 소속돼 있거나, 등록된 학생이 없습니다.
     </p>
-
-    <div class="card">
-        <p class="soon"><b>다음에 붙일 것</b><br>수업 회차 · 출결 · 진도기록</p>
-    </div>
 
 </main>
 
@@ -153,6 +178,13 @@
         addBtn.addEventListener('click', addOne);
 
         refresh();
+
+        // 초점은 키보드로 몰아 적는 환경(마우스가 있는 PC)에서만 옮긴다.
+        // 폰에서 옮기면 화면이 이 입력까지 스크롤되고 키보드가 올라와,
+        // 맨 위에 둔 '회차 기록' 버튼에 닿으려면 위로 스크롤 + 키보드 닫기를 더 해야 한다.
+        if (window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+            box.focus();
+        }
     })();
 </script>
 </body>

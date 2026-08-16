@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(~{::title}, ~{::main}, ~{})}">
+<head>
+    <title th:text="${student.name} + ' - 상담일지'">상담일지</title>
+</head>
+<body>
+<!--
+  목록과 등록 폼을 한 화면에 둔다.
+  통화가 끝난 직후 폰으로 적는 것이 기본이라, 화면을 한 번 더 들어가게 만들면 그 30초를 놓친다.
+
+  순서: 최근 약속 -> 적는 칸 -> 지난 이력.
+  약속을 맨 위에 두는 것은 통화 중에 "지난번에 하기로 한 것" 을 먼저 확인해야 하기 때문이다.
+-->
+<main>
+
+    <h1><span th:text="${student.name}">김민준</span> 상담일지</h1>
+    <p class="hint">
+        <a th:href="@{/students/{id}(id=${student.id})}">← 학생 정보</a>
+        <span class="rec-sep">·</span>
+        <span class="code" th:text="${student.code}">S2026001</span>
+    </p>
+
+    <div class="card cons-promises" th:if="${not #lists.isEmpty(promises)}">
+        <p class="cons-promises-head">최근 약속</p>
+        <ul>
+            <li th:each="p : ${promises}">
+                <span class="cons-promise-date" th:text="${p.consultedOn}">2026-08-18</span>
+                <span class="cons-promise-body" th:text="${p.promiseNote}">서술형 답안을 문장으로 쓰게 하기</span>
+            </li>
+        </ul>
+        <!-- 완료 체크는 두지 않는다. 지키지 못한 약속을 시스템이 채점하는 화면이 되면 아무도 안 적는다 -->
+        <p class="hint">다음 통화에서 먼저 꺼낼 문장입니다.</p>
+    </div>
+
+    <h2 class="sec">상담 기록하기</h2>
+
+    <form method="post" th:action="@{/students/{id}/consultations(id=${student.id})}" th:object="${form}">
+        <div class="card">
+            <th:block th:replace="~{consultation/fields :: notes}"></th:block>
+        </div>
+        <div class="actions">
+            <button class="btn primary wide big" type="submit">기록</button>
+        </div>
+    </form>
+
+    <!-- 이 화면에 이미 등록 폼이 있으므로 섹션 우측 추가 버튼은 두지 않는다 -->
+    <th:block th:replace="~{layout/record :: sectionHead('지난 상담', ${#lists.size(consultations)}, null, null)}"></th:block>
+
+    <th:block th:if="${#lists.isEmpty(consultations)}">
+        <div th:replace="~{layout/record :: emptyRecord(
+            '아직 상담 기록이 없습니다.',
+            '전화 한 통도 사실 · 걱정 · 약속 세 칸으로 남겨 두면, 리포트의 상담 요약과 약속 이행 항목이 그때 채워집니다.')}"></div>
+    </th:block>
+
+    <article class="rec-card" th:each="c : ${consultations}">
+        <p class="rec-title" th:text="${c.consultedOn}">2026-08-18</p>
+        <p class="rec-meta" th:text="${c.type != null} ? ${c.type.label} : '경로 미기재'">전화</p>
+
+        <div class="cons-note" th:if="${c.factNote}">
+            <p class="cons-note-label">사실</p>
+            <p class="cons-note-body" th:text="${c.factNote}"></p>
+        </div>
+        <div class="cons-note" th:if="${c.worryNote}">
+            <p class="cons-note-label">걱정</p>
+            <p class="cons-note-body" th:text="${c.worryNote}"></p>
+        </div>
+        <div class="cons-note promise" th:if="${c.promiseNote}">
+            <p class="cons-note-label">약속</p>
+            <p class="cons-note-body" th:text="${c.promiseNote}"></p>
+        </div>
+
+        <div class="cons-actions">
+            <a class="btn small" th:href="@{/consultations/{cid}/edit(cid=${c.id})}">수정</a>
+        </div>
+
+        <th:block th:replace="~{layout/record :: authorLine(${c.createdBy}, ${c.createdAt})}"></th:block>
+    </article>
+
+</main>
+</body>
+</html>

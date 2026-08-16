@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(~{::title}, ~{::main}, ~{::script})}">
+<head>
+    <title th:text="${editing} ? '평가 수정' : '평가 기록'">평가 기록</title>
+</head>
+<body>
+<main>
+
+    <h1 th:text="${editing} ? '평가 수정' : '평가 기록'">평가 기록</h1>
+    <p class="hint">
+        <span th:text="${student.name}">김민준</span>
+        <span class="code" th:text="${student.code}">S2026001</span>
+    </p>
+
+    <form method="post"
+          th:action="${editing}
+                     ? @{/assessments/{aid}(aid=${assessment.id})}
+                     : @{/students/{id}/assessments(id=${student.id})}"
+          th:object="${form}">
+
+        <div class="card">
+
+            <label for="assessedOn">평가한 날 <span class="req">*</span></label>
+            <input type="date" id="assessedOn" th:field="*{assessedOn}" required>
+            <p class="error" th:if="${#fields.hasErrors('assessedOn')}" th:errors="*{assessedOn}"></p>
+
+            <!-- select 로 두면 고를 때마다 두 번 탭이다. 종류는 네 개뿐이라 칩이 맞다 -->
+            <label>종류 <span class="req">*</span></label>
+            <div class="as-chips">
+                <label th:each="t : ${types}">
+                    <input type="radio" name="type" th:value="${t.name()}" th:checked="${form.type == t}">
+                    <span th:text="${t.label}">백지</span>
+                </label>
+            </div>
+            <p class="error" th:if="${#fields.hasErrors('type')}" th:errors="*{type}"></p>
+            <p class="hint">백지를 고르면 4축(용어·조건·예외·인과) 칸이 열립니다.</p>
+
+            <label for="unitName">단원명</label>
+            <input type="text" id="unitName" th:field="*{unitName}" placeholder="분수의 나눗셈">
+            <p class="error" th:if="${#fields.hasErrors('unitName')}" th:errors="*{unitName}"></p>
+
+            <label>점수</label>
+            <div class="as-scorerow">
+                <input type="number" step="0.5" min="0" inputmode="decimal"
+                       th:field="*{score}" placeholder="득점" aria-label="득점">
+                <span class="as-score-sep">/</span>
+                <input type="number" step="0.5" min="0" inputmode="decimal"
+                       th:field="*{maxScore}" placeholder="만점" aria-label="만점">
+            </div>
+            <p class="error" th:if="${#fields.hasErrors('score')}" th:errors="*{score}"></p>
+            <p class="error" th:if="${#fields.hasErrors('maxScore')}" th:errors="*{maxScore}"></p>
+            <p class="hint">비워 두어도 됩니다. 둘 다 적으면 백분율을 함께 보여 줍니다.</p>
+
+            <label>단원 상태</label>
+            <div class="as-chips">
+                <label th:each="u : ${unitStatuses}">
+                    <input type="radio" name="unitStatus" th:value="${u.name()}"
+                           th:checked="${form.unitStatus == u}">
+                    <span th:text="${u.label}">◎ 아주 좋음</span>
+                </label>
+                <!-- 라디오는 한 번 고르면 해제할 수 없다. 잘못 누른 것을 되돌릴 길을 둔다 -->
+                <label class="as-chip-none">
+                    <input type="radio" name="unitStatus" value="" th:checked="${form.unitStatus == null}">
+                    <span>미표시</span>
+                </label>
+            </div>
+
+        </div>
+
+        <!--
+          백지 4축.
+          감춰도 입력값은 그대로 제출된다. 백지가 아닌 종류로 저장하면
+          AssessmentService 가 네 칸을 버린다. 그래야 4축 추이에 백지가 아닌 점이 섞이지 않는다.
+        -->
+        <div class="card" id="blankBox" th:style="${form.blankType} ? '' : 'display:none'">
+            <h2 class="sec">백지 4축</h2>
+            <p class="hint">1~5, <b>5가 가장 잘 쓴 것</b>입니다. 확인하지 않은 축은 미표시로 둡니다.</p>
+
+            <label>용어</label>
+            <th:block th:replace="~{layout/record :: scaleInput('blankTerm', ${form.blankTerm},
+                                    '못 씀', '정확히 씀')}"></th:block>
+            <p class="error" th:if="${#fields.hasErrors('blankTerm')}" th:errors="*{blankTerm}"></p>
+
+            <label>조건</label>
+            <th:block th:replace="~{layout/record :: scaleInput('blankCondition', ${form.blankCondition},
+                                    '못 씀', '정확히 씀')}"></th:block>
+            <p class="error" th:if="${#fields.hasErrors('blankCondition')}" th:errors="*{blankCondition}"></p>
+
+            <label>예외</label>
+            <th:block th:replace="~{layout/record :: scaleInput('blankException', ${form.blankException},
+                                    '못 씀', '정확히 씀')}"></th:block>
+            <p class="error" th:if="${#fields.hasErrors('blankException')}" th:errors="*{blankException}"></p>
+
+            <label>인과</label>
+            <th:block th:replace="~{layout/record :: scaleInput('blankCausality', ${form.blankCausality},
+                                    '못 씀', '정확히 씀')}"></th:block>
+            <p class="error" th:if="${#fields.hasErrors('blankCausality')}" th:errors="*{blankCausality}"></p>
+        </div>
+
+        <div class="card">
+            <h2 class="sec">오답 유형</h2>
+            <p class="hint">
+                틀린 개수를 유형별로 셉니다. <b>0인 유형은 저장하지 않습니다.</b>
+                이 분포가 리포트의 처방(무엇부터 잡을 것인가)이 됩니다.
+            </p>
+
+            <div class="as-tags">
+                <div th:each="tag, s : *{tags}">
+                    <div class="as-tag-row" th:classappend="${tag.cnt != null and tag.cnt > 0} ? 'on'">
+                        <input type="hidden" th:field="*{tags[__${s.index}__].code}">
+                        <span class="as-tag-name" th:text="${tag.code.label}">계산</span>
+                        <button type="button" class="as-step-btn" data-delta="-1"
+                                th:attr="aria-label=${tag.code.label} + ' 줄이기'">−</button>
+                        <input type="number" class="as-step-num" min="0" max="99" inputmode="numeric"
+                               th:field="*{tags[__${s.index}__].cnt}"
+                               th:attr="aria-label=${tag.code.label} + ' 개수'">
+                        <button type="button" class="as-step-btn" data-delta="1"
+                                th:attr="aria-label=${tag.code.label} + ' 늘리기'">+</button>
+                    </div>
+                    <p class="error" th:if="${#fields.hasErrors('tags[__${s.index}__].cnt')}"
+                       th:errors="*{tags[__${s.index}__].cnt}"></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <label for="studentQuote">아이가 쓴 문장</label>
+            <input type="text" id="studentQuote" th:field="*{studentQuote}"
+                   placeholder="뒤집어서 곱하면 되는데 왜 그런지는 모르겠다">
+            <p class="error" th:if="${#fields.hasErrors('studentQuote')}" th:errors="*{studentQuote}"></p>
+            <p class="hint">
+                <b>다듬지 말고 그대로</b> 옮깁니다. 문장을 고쳐 쓰면 리포트에서 인용할 수 없습니다.
+            </p>
+
+            <label for="sourceLocation">원본 위치</label>
+            <input type="text" id="sourceLocation" th:field="*{sourceLocation}"
+                   placeholder="2026-1학기 파일 3번째">
+            <p class="error" th:if="${#fields.hasErrors('sourceLocation')}" th:errors="*{sourceLocation}"></p>
+            <p class="hint">
+                시험지가 <b>어디 있는지만</b> 적습니다. 스캔·사진은 올리지 않습니다.
+            </p>
+
+            <label for="note">메모</label>
+            <textarea id="note" th:field="*{note}"
+                      placeholder="시간이 부족했는지, 문제를 잘못 읽었는지 등 개수로 안 남는 것"></textarea>
+        </div>
+
+        <div class="actions">
+            <a class="btn wide"
+               th:href="${editing}
+                        ? @{/assessments/{aid}(aid=${assessment.id})}
+                        : @{/students/{id}/assessments(id=${student.id})}">취소</a>
+            <button class="btn primary wide" type="submit" th:text="${editing} ? '저장' : '기록'">기록</button>
+        </div>
+
+    </form>
+
+</main>
+
+<script>
+    // 백지 4축은 종류가 백지일 때만 보인다.
+    // 감추기만 하고 지우지 않는다. 지우면 종류를 잘못 눌렀다가 되돌릴 때 적어 둔 점수가 사라진다.
+    // 백지가 아닌 채로 저장하면 서버가 네 칸을 버린다.
+    (function () {
+        var box = document.getElementById('blankBox');
+        if (!box) return;
+        var radios = document.querySelectorAll('input[name="type"]');
+
+        function sync() {
+            var picked = document.querySelector('input[name="type"]:checked');
+            box.style.display = (picked && picked.value === 'BLANK') ? '' : 'none';
+        }
+
+        Array.prototype.forEach.call(radios, function (r) { r.addEventListener('change', sync); });
+        sync();
+    })();
+
+    // 오답 개수 스테퍼. 폰에서 숫자판을 띄우지 않고 개수를 올린다.
+    // 버튼은 type="button" 이어야 한다. 빼면 개수를 올리려 누를 때마다 폼이 제출된다.
+    (function () {
+        var rows = document.querySelectorAll('.as-tag-row');
+
+        // 0인 유형은 저장되지 않는다. 무엇이 실제로 남는지 눈에 보여야 한다
+        function mark(row, value) {
+            if (value > 0) {
+                row.classList.add('on');
+            } else {
+                row.classList.remove('on');
+            }
+        }
+
+        Array.prototype.forEach.call(rows, function (row) {
+            var num = row.querySelector('.as-step-num');
+            if (!num) return;
+
+            function read() {
+                var v = parseInt(num.value, 10);
+                return isNaN(v) ? 0 : v;
+            }
+
+            Array.prototype.forEach.call(row.querySelectorAll('.as-step-btn'), function (btn) {
+                btn.addEventListener('click', function () {
+                    var next = read() + parseInt(btn.getAttribute('data-delta'), 10);
+                    if (next < 0) next = 0;
+                    if (next > 99) next = 99;
+                    num.value = next;
+                    mark(row, next);
+                });
+            });
+
+            num.addEventListener('input', function () { mark(row, read()); });
+            mark(row, read());
+        });
+    })();
+</script>
+</body>
+</html>

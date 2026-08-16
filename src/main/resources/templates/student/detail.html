@@ -1,4 +1,19 @@
 <!DOCTYPE html>
+<!--
+  학생 한 명의 기록이 모두 모이는 화면. 이 앱에서 가장 많이 열리는 화면이고,
+  여섯 종류의 기록으로 들어가는 관문이다. 여기에 링크가 없는 기능은 없는 기능이다.
+
+  화면 순서에 뜻이 있다.
+    1. 기준선 경고   - 가장 중요한 누락. 지금 안 남기면 리포트의 before 가 영영 빈다
+    2. 학생 정보 · 상태 조작
+    3. 리포트 초안   - 이 앱의 최종 목적물. 재원 중에도 열어 빈 칸을 보게 한다
+    4. 기록 요약     - 종류별 건수와 마지막 기록일. 밀린 것이 보여야 적는다
+    5. 기록 섹션 6개 - 진도 · 관찰 · 장면 · 개입 · 평가 · 상담 (기록 주기가 짧은 것부터)
+
+  장면 · 개입 · 평가 섹션의 마크업은 기능별 조각 파일에 있다
+  (scene/detailSection, intervention/detailSection, assessment/section).
+  전부 이 파일에 넣으면 카드 모양을 고칠 때마다 공용 화면을 건드려야 한다.
+-->
 <html lang="ko" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout/base :: page(~{::title}, ~{::main}, ~{})}">
 <head>
@@ -11,6 +26,22 @@
         <span th:text="${student.name}">김민준</span>
         <span class="badge" th:classappend="${student.status.name()}" th:text="${student.status.label}">재원</span>
     </h1>
+
+    <!--
+      기준선이 없으면 리포트의 before 가 비어 있다는 뜻이다.
+      시간이 지나면 되돌릴 수 없는 유일한 누락이라, 관찰 섹션까지 스크롤하기 전에
+      화면 맨 위에서 알린다. 점잖은 hint 로 두면 아무도 안 만든다.
+    -->
+    <div class="obs-alert" th:if="${observationBaseline == null}">
+        <p class="obs-alert-title">입회 기준선이 없습니다</p>
+        <p class="obs-alert-body">
+            리포트의 <b>“이만큼 달라졌다”</b>는 들어왔을 때와 지금을 견주어 씁니다.
+            들어온 시점의 모습을 남겨 두지 않으면 견줄 <b>before 가 영영 없습니다.</b>
+            시간이 지나면 되돌릴 수 없으니 지금 5분만 쓰세요.
+        </p>
+        <a class="btn primary big"
+           th:href="@{/students/{id}/observations/new(id=${student.id},kind='BASELINE')}">+ 입회 기준선 남기기</a>
+    </div>
 
     <div class="card">
         <dl class="detail">
@@ -32,6 +63,152 @@
         <a class="btn wide" th:href="@{/students}">목록</a>
         <a class="btn primary wide" th:href="@{/students/{id}/edit(id=${student.id})}">수정</a>
     </div>
+
+    <!-- 되돌리기 어려운 조작은 '수정' 과 같은 크기로 두지 않는다 -->
+    <div class="ops-actions">
+        <a class="btn small" th:if="${student.status.name() != 'LEFT'}"
+           th:href="@{/students/{id}/leave(id=${student.id})}">퇴원 처리</a>
+        <form method="post" th:if="${student.status.name() == 'ACTIVE'}"
+              th:action="@{/students/{id}/pause(id=${student.id})}">
+            <button type="submit" class="btn small quiet">휴원</button>
+        </form>
+        <!-- 휴원 되돌리기는 확인을 두지 않는다. 반 배정이 그대로 남아 있어 되돌리는 데 잃는 것이 없다 -->
+        <form method="post" th:if="${student.status.name() == 'PAUSED'}"
+              th:action="@{/students/{id}/resume(id=${student.id})}">
+            <button type="submit" class="btn small">재원 복귀</button>
+        </form>
+        <!--
+          퇴원 취소는 성격이 다르다. Student.resume() 이 퇴원일·퇴원 사유·보관 만료일을 함께 지운다.
+          사유는 사람이 쓴 문장이라 되돌릴 길이 없고, 보관 만료일이 사라지면
+          findPurgeTargets 가 status=LEFT AND purgeAfter IS NOT NULL 로 거르기 때문에
+          그 학생은 파기 목록에 다시 오르지 못한다. 보관 3년 방침이 그 학생 하나에 대해 조용히 무효가 된다.
+          바로 옆 '휴원' 과 같은 자리·같은 크기라 폰에서 오탭이 현실적이므로 확인을 붙인다.
+        -->
+        <form method="post" th:if="${student.status.name() == 'LEFT'}"
+              th:action="@{/students/{id}/resume(id=${student.id})}"
+              onsubmit="return confirm('퇴원을 취소하고 재원으로 되돌릴까요?\n\n퇴원일 · 퇴원 사유 · 보관 만료일이 지워집니다. 되돌릴 수 없습니다.\n반 배정은 다시 넣어야 합니다.');">
+            <button type="submit" class="btn small danger">퇴원 취소</button>
+        </form>
+    </div>
+
+    <p class="ops-updated" th:if="${student.updatedBy != null}"
+       th:text="'마지막 수정: ' + ${student.updatedBy.name} + ' · ' + ${#temporals.format(student.updatedAt, 'yyyy-MM-dd HH:mm')}">마지막 수정: 포비 · 2026-08-18 21:40</p>
+
+    <!--
+      리포트로 들어가는 유일한 입구다. 퇴원생(status LEFT)만 보이게 감추지 않는다.
+      재원 중에 열어 보고 빈 칸을 채우게 하는 것이 그 화면의 목적이다.
+    -->
+    <div class="actions">
+        <a class="btn big wide primary" th:href="@{/students/{id}/report(id=${student.id})}">퇴원생 리포트 초안</a>
+    </div>
+    <p class="hint">지금까지 적은 기록이 리포트의 어느 칸에 들어가는지, 무엇이 비어 있는지 한 장으로 보여 줍니다.</p>
+
+    <!--
+      기록 요약. 종류마다 건수와 마지막 기록일을 함께 낸다.
+      건수만 보이면 석 달 전에 멈춘 기록과 어제 적은 기록이 같아 보인다.
+      0 은 '—' 로 바꾸지 않는다. 0 은 모르는 값이 아니라 "한 번도 안 적었다" 는 정보다.
+    -->
+    <h2 class="sec">기록 요약</h2>
+
+    <ul class="students rec-nav">
+        <li>
+            <!-- 진도·출결은 학생 화면에서 적을 수 없다. 입력처는 반 회차 화면이다 -->
+            <a th:href="${currentEnrollment != null}
+                        ? @{/classes/{cid}/sessions(cid=${currentEnrollment.classGroup.id})}
+                        : @{/classes}">
+                <span>
+                    <span class="s-name">진도 · 출결</span>
+                    <span class="s-sub">매 수업 30초</span>
+                    <br>
+                    <span class="code" th:if="${currentEnrollment != null}"
+                          th:text="${currentEnrollment.classGroup.name} + ' 회차 화면 · '
+                                   + (${lastProgressOn != null} ? '마지막 ' + ${lastProgressOn} : '아직 없음')">화목 A반 회차 화면 · 마지막 2026-08-18</span>
+                    <span class="code" th:unless="${currentEnrollment != null}">배정된 반이 없습니다. 반을 정해야 회차를 엽니다</span>
+                </span>
+                <span class="s-right">
+                    <span class="rn-cnt" th:classappend="${#lists.isEmpty(progressLogs)} ? 'zero'"
+                          th:text="${#lists.size(progressLogs)}">0</span>
+                </span>
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/students/{id}/observations(id=${student.id})}">
+                <span>
+                    <span class="s-name">관찰기록</span>
+                    <span class="s-sub">1~4주 5분</span>
+                    <br>
+                    <span class="code"
+                          th:text="${lastObservationOn != null} ? '마지막 ' + ${lastObservationOn} : '아직 없음'">마지막 2026-08-01</span>
+                </span>
+                <span class="s-right">
+                    <span class="rn-cnt" th:classappend="${#lists.isEmpty(observations)} ? 'zero'"
+                          th:text="${#lists.size(observations)}">0</span>
+                </span>
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/students/{id}/scenes(id=${student.id})}">
+                <span>
+                    <span class="s-name">장면</span>
+                    <span class="s-sub">분기 3분</span>
+                    <br>
+                    <span class="code"
+                          th:text="${lastSceneOn != null} ? '마지막 ' + ${lastSceneOn} : '아직 없음'">마지막 2026-07-11</span>
+                </span>
+                <span class="s-right">
+                    <span class="rn-cnt" th:classappend="${#lists.isEmpty(scenes)} ? 'zero'"
+                          th:text="${#lists.size(scenes)}">0</span>
+                </span>
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/students/{id}/interventions(id=${student.id})}">
+                <span>
+                    <span class="s-name">개입 로그</span>
+                    <span class="s-sub">해 본 것과 그 결과</span>
+                    <br>
+                    <span class="code"
+                          th:text="${lastInterventionOn != null} ? '마지막 ' + ${lastInterventionOn} : '아직 없음'">마지막 2026-07-11</span>
+                </span>
+                <span class="s-right">
+                    <span class="rn-cnt" th:classappend="${#lists.isEmpty(interventions)} ? 'zero'"
+                          th:text="${#lists.size(interventions)}">0</span>
+                </span>
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/students/{id}/assessments(id=${student.id})}">
+                <span>
+                    <span class="s-name">평가</span>
+                    <span class="s-sub">점수와 오답 유형</span>
+                    <br>
+                    <span class="code"
+                          th:text="${lastAssessmentOn != null} ? '마지막 ' + ${lastAssessmentOn} : '아직 없음'">마지막 2026-08-10</span>
+                </span>
+                <span class="s-right">
+                    <span class="rn-cnt" th:classappend="${#lists.isEmpty(assessments)} ? 'zero'"
+                          th:text="${#lists.size(assessments)}">0</span>
+                </span>
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/students/{id}/consultations(id=${student.id})}">
+                <span>
+                    <span class="s-name">상담</span>
+                    <span class="s-sub">사실 · 걱정 · 약속</span>
+                    <br>
+                    <span class="code"
+                          th:text="${lastConsultationOn != null} ? '마지막 ' + ${lastConsultationOn} : '아직 없음'">마지막 2026-06-20</span>
+                </span>
+                <span class="s-right">
+                    <span class="rn-cnt" th:classappend="${#lists.isEmpty(consultations)} ? 'zero'"
+                          th:text="${#lists.size(consultations)}">0</span>
+                </span>
+            </a>
+        </li>
+    </ul>
+
+    <p class="hint">노란 <b>0</b> 은 한 번도 적지 않은 것입니다. 리포트에서 그대로 빈칸이 됩니다.</p>
 
     <h2 class="sec">반 <span class="cnt" th:text="${#lists.size(enrollments)}">0</span></h2>
 
@@ -56,12 +233,101 @@
         </li>
     </ul>
 
-    <div class="card">
-        <p class="soon">
-            <b>다음에 붙일 것</b><br>
-            진도기록(매 수업) · 관찰기록(1~4주) · 장면/개입로그(분기) · 평가와 오답 태그
-        </p>
+    <!--
+      진도. 추가 버튼이 없다(newHref 에 null). 이 기록은 반 회차 화면에서만 만들어진다.
+      recordCard 는 문자열 세 개짜리라 교재·범위·과제수행을 한 줄에 담을 수 없어서
+      킷이 허용한 대로 rec-card 를 직접 쓴다.
+    -->
+    <th:block th:replace="~{layout/record :: sectionHead('진도', ${#lists.size(progressLogs)}, null, null)}"></th:block>
+
+    <!--
+      th:if 와 th:replace 를 같은 태그에 두지 않는다.
+      th:replace 가 먼저 처리돼서 th:if 가 무시되고, 진도기록이 있어도 "없습니다" 가 함께 뜬다.
+    -->
+    <th:block th:if="${#lists.isEmpty(progressLogs)}">
+        <th:block th:replace="~{layout/record :: emptyRecord(
+            '아직 진도기록이 없습니다.',
+            '반 회차 화면에서 출결을 찍으면 그날 반 공통 진도가 이 학생의 기록으로 복사됩니다. 리포트 2장 진도 흐름의 재료입니다.')}"></th:block>
+    </th:block>
+
+    <!--
+      최근 다섯 건까지. 진도는 매 수업 쌓이는 기록이라 전부 그리면
+      한 학기만 지나도 이 화면이 진도 카드 수십 장이 되고 아래 섹션에 손이 닿지 않는다.
+    -->
+    <th:block th:each="p, st : ${progressLogs}" th:if="${st.index < 5}">
+        <article class="rec-card">
+            <p class="rec-title" th:text="${p.session.sessionDate} + ' · ' + ${p.session.classGroup.name}">2026-08-18 · 화목 A반</p>
+            <p class="rec-meta">
+                <span th:text="${p.textbook} ?: '교재 미기록'">개념원리</span>
+                <span th:text="${p.rangeText} ?: ''">p.42~55</span>
+                <span th:if="${p.homeworkStatus != null}" th:text="'· 지난 과제 ' + ${p.homeworkStatus.label}">· 지난 과제 일부</span>
+            </p>
+            <p class="rec-body" th:text="${p.note} ?: (${p.content} ?: '—')">남아서 3번을 다시 풀었다.</p>
+        </article>
+    </th:block>
+
+    <!-- 학생 단위 진도 목록 화면은 없다. 나머지는 반 회차 화면에서 본다 -->
+    <p class="hint" th:if="${#lists.size(progressLogs) > 5}">
+        진도기록 <b th:text="${#lists.size(progressLogs)}">12</b>건 중 최근 5건입니다.
+        <a th:if="${currentEnrollment != null}"
+           th:href="@{/classes/{cid}/sessions(cid=${currentEnrollment.classGroup.id})}">반 회차 화면에서 전체 보기</a>
+        <span th:unless="${currentEnrollment != null}">나머지는 그때 속했던 반의 회차 화면에 있습니다.</span>
+    </p>
+
+    <!--
+      관찰. 기준선 경고는 화면 맨 위에 한 번만 낸다.
+      같은 안내를 한 화면에 두 번 두면 둘 다 안 읽힌다.
+    -->
+    <th:block th:replace="~{layout/record :: sectionHead('관찰기록', ${#lists.size(observations)},
+                            @{/students/{id}/observations/new(id=${student.id})}, '+ 관찰')}"></th:block>
+
+    <th:block th:if="${#lists.isEmpty(observations)}">
+        <th:block th:replace="~{layout/record :: emptyRecord(
+            '아직 관찰기록이 없습니다.',
+            '1~4주에 한 번 5분입니다. 이해도·과제 수행도와 아이 말 한 줄이 리포트 2장 성장 근거가 됩니다.')}"></th:block>
+    </th:block>
+
+    <!-- th:each 와 th:replace 를 같은 태그에 두지 않는다. th:replace 가 먼저 처리돼 한 건만 나온다 -->
+    <th:block th:each="o, st : ${observations}" th:if="${st.index < 2}">
+        <div th:replace="~{layout/record :: recordCard(
+                ${o.periodStart} + ' ~ ' + ${o.periodEnd},
+                ${o.kind.label} + ' · 이해도 ' + (${o.understanding} ?: '미표시') + ' · 과제 ' + (${o.homeworkRate} ?: '미표시'),
+                ${o.teacherComment} ?: (${o.strength} ?: '—'))}"></div>
+    </th:block>
+
+    <div class="actions" th:unless="${#lists.isEmpty(observations)}">
+        <a class="btn wide" th:href="@{/students/{id}/observations(id=${student.id})}">관찰기록 전체 보기 (기준선 비교)</a>
     </div>
+
+    <th:block th:replace="~{scene/detailSection :: section(${student}, ${scenes})}"></th:block>
+    <th:block th:replace="~{intervention/detailSection :: section(${student}, ${interventions})}"></th:block>
+    <th:block th:replace="~{assessment/section :: studentSection(${student}, ${assessments})}"></th:block>
+
+    <!--
+      상담. 카드 전체 목록은 두지 않는다. 전용 화면(/students/{id}/consultations)에 있고
+      여기서는 '약속' 만 보이면 된다.
+    -->
+    <th:block th:replace="~{layout/record :: sectionHead('상담', ${#lists.size(consultations)}, @{/students/{id}/consultations(id=${student.id})}, '상담일지')}"></th:block>
+
+    <th:block th:if="${#lists.isEmpty(consultations)}">
+        <div th:replace="~{layout/record :: emptyRecord(
+            '아직 상담 기록이 없습니다.',
+            '전화 한 통도 사실 · 걱정 · 약속 세 칸으로 남겨 두면, 리포트의 상담 요약과 약속 이행 항목이 그때 채워집니다.')}"></div>
+    </th:block>
+
+    <div class="card cons-promises" th:if="${not #lists.isEmpty(promises)}">
+        <p class="cons-promises-head">최근 약속</p>
+        <ul>
+            <li th:each="p : ${promises}">
+                <span class="cons-promise-date" th:text="${p.consultedOn}">2026-08-18</span>
+                <span class="cons-promise-body" th:text="${p.promiseNote}">서술형 답안을 문장으로 쓰게 하기</span>
+            </li>
+        </ul>
+    </div>
+
+    <p class="soon" th:if="${not #lists.isEmpty(consultations) and #lists.isEmpty(promises)}">
+        약속으로 남긴 문장이 아직 없습니다.
+    </p>
 
 </main>
 </body>

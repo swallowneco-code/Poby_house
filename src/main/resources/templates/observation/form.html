@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(~{::title}, ~{::main}, ~{})}">
+<head>
+    <title th:text="${editing} ? '관찰기록 수정' : (${baselineMode} ? '입회 기준선' : '관찰기록')">관찰기록</title>
+</head>
+<body>
+<main>
+
+    <h1 th:text="${editing} ? '관찰기록 수정'
+                            : (${baselineMode} ? '입회 기준선 남기기' : '관찰기록 남기기')">관찰기록 남기기</h1>
+    <p class="obs-sub">
+        <a th:href="@{/students/{id}/observations(id=${student.id})}">
+            <span th:text="${student.name}">김민준</span>
+            <span class="code" th:text="${student.code}">S2026001</span>
+        </a>
+    </p>
+
+    <!--
+      학생을 등록한 직후 ?kind=BASELINE 으로 바로 떨어지는 화면이다.
+      처음 온 사람은 여기가 무엇을 적는 칸인지 모른다. 안내 없이 두면
+      "오늘 이 아이가 어떤가" 를 적어 버려서, 몇 달 뒤 리포트의 before 가 after 와 같아진다.
+    -->
+    <div class="obs-guide" th:if="${baselineMode}">
+        <p class="obs-guide-title">지금 적는 것은 <b>“들어왔을 때의 모습”</b>입니다</p>
+        <ul>
+            <li>오늘 잘하는지가 아니라 <b>처음 만났을 때</b> 어땠는지를 적습니다.</li>
+            <li>점수는 <b>5가 가장 좋습니다.</b> 아직 확인하지 못한 항목은 <b>미표시</b>로 두세요.
+                1점과는 다른 정보입니다.</li>
+            <li>이 기록이 퇴원 리포트의 <b>before</b>가 됩니다. 나중에는 만들 수 없습니다.</li>
+        </ul>
+    </div>
+
+    <p class="obs-guide-thin" th:if="${!editing and !baselineMode and !hasBaseline}">
+        이 학생은 <b>입회 기준선</b>이 아직 없습니다.
+        <a th:href="@{/students/{id}/observations/new(id=${student.id},kind='BASELINE')}">기준선을 먼저 남기기</a>
+    </p>
+
+    <form method="post"
+          th:action="${editing} ? @{/observations/{oid}(oid=${observation.id})}
+                                : @{/students/{id}/observations(id=${student.id})}"
+          th:object="${form}">
+
+        <div class="card">
+
+            <label for="kind">관찰 종류</label>
+            <select id="kind" th:field="*{kind}">
+                <option th:each="k : ${kinds}" th:value="${k.name()}" th:text="${k.label}">정기</option>
+            </select>
+            <p class="hint">
+                <b>입회 기준선</b>은 학생마다 하나입니다. 평소 기록은 정기, 분기마다 돌아보는 것은 분기 점검입니다.
+            </p>
+            <p class="error" th:if="${#fields.hasErrors('kind')}" th:errors="*{kind}"></p>
+
+            <label for="periodStart">관찰 기간 <span class="req">*</span></label>
+            <div class="obs-period">
+                <input type="date" id="periodStart" th:field="*{periodStart}" required aria-label="관찰 시작일">
+                <span class="obs-period-sep" aria-hidden="true">~</span>
+                <input type="date" id="periodEnd" th:field="*{periodEnd}" required aria-label="관찰 종료일">
+            </div>
+            <p class="hint" th:if="${!editing and !baselineMode}">
+                지난 관찰이 끝난 다음날부터 오늘까지가 미리 채워져 있습니다. 맞으면 그냥 두세요.
+            </p>
+            <p class="hint" th:if="${!editing and baselineMode}">
+                등록일부터 오늘까지가 미리 채워져 있습니다. 처음 만난 무렵을 담는 기간입니다.
+            </p>
+            <p class="error" th:if="${#fields.hasErrors('periodStart')}" th:errors="*{periodStart}"></p>
+            <p class="error" th:if="${#fields.hasErrors('periodEnd')}" th:errors="*{periodEnd}"></p>
+            <p class="error" th:if="${#fields.hasErrors('periodInOrder')}" th:errors="*{periodInOrder}"></p>
+
+            <label>이해도</label>
+            <th:block th:replace="~{layout/record :: scaleInput('understanding', ${form.understanding},
+                                    '아직 어렵다', '혼자 푼다')}"></th:block>
+            <p class="hint">5가 가장 좋습니다. 확인하지 못했으면 <b>미표시</b>로 두세요.</p>
+            <p class="error" th:if="${#fields.hasErrors('understanding')}" th:errors="*{understanding}"></p>
+
+            <label>과제 수행도</label>
+            <th:block th:replace="~{layout/record :: scaleInput('homeworkRate', ${form.homeworkRate},
+                                    '거의 못 해온다', '늘 해온다')}"></th:block>
+            <p class="error" th:if="${#fields.hasErrors('homeworkRate')}" th:errors="*{homeworkRate}"></p>
+
+            <label for="selfAssessment">아이 말 (자기평가 한 줄)</label>
+            <input type="text" id="selfAssessment" th:field="*{selfAssessment}" maxlength="500"
+                   placeholder="분수는 좀 알 것 같은데 문제 읽는 게 어려워요">
+            <p class="hint">
+                <b>아이가 한 말 그대로</b> 적습니다. 다듬어 요약하면 리포트에서 인용할 수 없습니다.
+            </p>
+            <p class="error" th:if="${#fields.hasErrors('selfAssessment')}" th:errors="*{selfAssessment}"></p>
+
+            <label for="strength">잘하는 점</label>
+            <textarea id="strength" th:field="*{strength}"
+                      placeholder="식은 정확히 세운다. 오늘 12번을 식만 보고 맞혔다"></textarea>
+            <p class="hint">
+                <b>무엇을 보고 그렇게 판단했는지</b> 한 줄을 함께 적습니다.
+                근거 없는 칭찬은 리포트에 옮겨 쓸 수 없습니다.
+            </p>
+
+            <label for="weakness">보완할 점</label>
+            <textarea id="weakness" th:field="*{weakness}"
+                      placeholder="문제 조건을 빼먹는다. 다음 2주는 조건에 밑줄부터 그리게 한다"></textarea>
+            <p class="hint">
+                <b>어떻게 해 볼지</b>까지 한 줄을 함께 적습니다. 처방 없는 지적은 다음 사람이 쓸 수 없습니다.
+            </p>
+
+            <label for="attitudeNote">태도·특이사항</label>
+            <textarea id="attitudeNote" th:field="*{attitudeNote}"
+                      placeholder="모르는 것을 먼저 묻기 시작했다. 뒷자리에서 앞자리로 옮겨 앉았다"></textarea>
+
+            <label for="teacherComment">종합 코멘트</label>
+            <textarea id="teacherComment" th:field="*{teacherComment}"
+                      placeholder="이 기간을 한 문단으로. 다음 기간에 무엇을 볼지까지"></textarea>
+
+        </div>
+
+        <div class="actions">
+            <a class="btn wide" th:href="@{/students/{id}/observations(id=${student.id})}">취소</a>
+            <button class="btn primary wide" type="submit" th:text="${editing} ? '저장' : '남기기'">남기기</button>
+        </div>
+
+    </form>
+
+</main>
+</body>
+</html>

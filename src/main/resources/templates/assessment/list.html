@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(~{::title}, ~{::main}, ~{})}">
+<head>
+    <title th:text="${student.name} + ' - 평가'">평가</title>
+</head>
+<body>
+<main>
+
+    <h1>
+        <span th:text="${student.name}">김민준</span> 평가
+    </h1>
+    <p class="hint">
+        <span class="code" th:text="${student.code}">S2026001</span>
+    </p>
+
+    <!--
+      분포를 목록보다 위에 둔다.
+      낱개 평가는 보관용이고, "무엇이 반복되는가" 가 다음 수업에서 쓰는 정보다.
+    -->
+    <th:block th:if="${tagTotal > 0}">
+        <h2 class="sec">
+            오답 유형 분포 <span class="cnt" th:text="${tagTotal}">0</span>
+        </h2>
+        <div class="card">
+            <div class="as-dist">
+                <div class="as-bar" th:each="e : ${tagDist}">
+                    <span class="as-bar-name" th:text="${e.key.label}">계산</span>
+                    <span class="as-bar-track">
+                        <span class="as-bar-fill" th:style="'width:' + ${e.value * 100 / tagMax} + '%'"></span>
+                    </span>
+                    <span class="as-bar-cnt" th:text="${e.value}">5</span>
+                </div>
+            </div>
+            <p class="hint">
+                <span th:if="${periodFrom != null}"
+                      th:text="${periodFrom} + ' ~ ' + ${periodTo} + ' 전체'">전체</span>
+                합계입니다. 0건인 유형은 표시하지 않습니다.
+                <b>위에 있는 것부터</b> 잡는 것이 리포트의 처방이 됩니다.
+            </p>
+        </div>
+    </th:block>
+
+    <th:block th:if="${latestBlank != null}">
+        <h2 class="sec">가장 최근 백지 4축</h2>
+        <div class="card">
+            <th:block th:replace="~{layout/record :: dateRow('본 날', ${latestBlank.assessedOn})}"></th:block>
+            <th:block th:replace="~{assessment/axes :: axes(${latestBlank})}"></th:block>
+            <p class="hint">
+                입회 무렵의 백지와 견주면 리포트의 before/after 가 됩니다. 5가 가장 잘 쓴 것입니다.
+            </p>
+        </div>
+    </th:block>
+
+    <th:block th:replace="~{layout/record :: sectionHead('평가', ${#lists.size(assessments)},
+                            @{/students/{id}/assessments/new(id=${student.id})}, '+ 평가')}"></th:block>
+
+    <th:block th:if="${#lists.isEmpty(assessments)}">
+        <th:block th:replace="~{layout/record :: emptyRecord(
+            '아직 평가 기록이 없습니다.',
+            '점수만 남기면 리포트에 쓸 것이 없습니다. 어떤 유형을 몇 개 틀렸는지까지 적어야 리포트 2-2 오답 분포와 처방이 채워집니다.')}"></th:block>
+    </th:block>
+
+    <!-- 카드는 assessment/section 의 조각이다. 학생 상세와 같은 모양이어야 한다 -->
+    <th:block th:each="a : ${assessments}">
+        <a th:replace="~{assessment/section :: card(${a}, true)}"></a>
+    </th:block>
+
+    <div class="actions">
+        <a class="btn wide" th:href="@{/students/{id}(id=${student.id})}">학생 정보</a>
+    </div>
+
+</main>
+</body>
+</html>

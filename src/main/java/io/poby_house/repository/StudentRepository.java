@@ -2,10 +2,13 @@ package io.poby_house.repository;
 
 import io.poby_house.domain.Student;
 import io.poby_house.domain.StudentStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface StudentRepository extends JpaRepository<Student, Long> {
@@ -43,8 +46,15 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
      * 정렬은 status 의 선언 순서(재원 → 휴원 → 퇴원)를 따른다.
      * 그냥 order by status 로 두면 문자열 정렬이라 ACTIVE → LEFT → PAUSED,
      * 즉 퇴원생이 휴원생보다 위로 올라온다.
+     *
+     * 페이지로 돌려준다. 예전에는 전건을 List 로 올리고 화면이 #lists.size 로 총원을 셌다.
+     * 학생이 몇 백 명이 되면 폰에서 목록 한 번 여는 데 전건이 다 올라온다.
+     * 총원은 아래 countQuery 로 센다.
+     *
+     * countQuery 를 손으로 적는 이유: 본문에 order by 와 case 식이 있어
+     * 자동 생성 count 쿼리를 신뢰할 수 없다. 정렬 조건이 없는 형태로 직접 준다.
      */
-    @Query("""
+    @Query(value = """
            select s from Student s
            where (:status is null or s.status = :status)
              and (:keyword is null
@@ -57,8 +67,34 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
                         else 2
                     end,
                     s.name asc
+           """,
+           countQuery = """
+           select count(s) from Student s
+           where (:status is null or s.status = :status)
+             and (:keyword is null
+                  or s.name   like concat('%', :keyword, '%')
+                  or s.code   like concat('%', :keyword, '%')
+                  or s.school like concat('%', :keyword, '%'))
            """)
-    List<Student> search(@Param("status") StudentStatus status, @Param("keyword") String keyword);
+    Page<Student> search(@Param("status") StudentStatus status,
+                         @Param("keyword") String keyword,
+                         Pageable pageable);
+
+    /**
+     * 보관 만료일이 지난 퇴원생. 오래 방치된 것이 위로 온다.
+     *
+     * status 를 함께 거는 이유: 재원 복귀(resume)가 purgeAfter 를 지우므로 보통 LEFT 뿐이지만,
+     * 손으로 손질한 데이터에 값이 남아 있을 수 있다.
+     * 다니는 학생이 파기 목록에 오르는 것은 사고다.
+     */
+    @Query("""
+           select s from Student s
+           where s.status = io.poby_house.domain.StudentStatus.LEFT
+             and s.purgeAfter is not null
+             and s.purgeAfter <= :today
+           order by s.purgeAfter asc
+           """)
+    List<Student> findPurgeTargets(@Param("today") LocalDate today);
 
     /**
      * 올해 발급된 마지막 일련번호. 다음 번호를 뽑을 때 쓴다.

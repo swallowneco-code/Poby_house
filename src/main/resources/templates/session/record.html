@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(~{::title}, ~{::main}, ~{::script})}">
+<head>
+    <title th:text="${classSession.classGroup.name} + ' ' + ${classSession.sessionDate} + ' 수업 기록'">수업 기록</title>
+</head>
+<body>
+<main>
+
+    <h1>
+        <span th:text="${classSession.sessionDate}">2026-08-18</span> 수업 기록
+    </h1>
+
+    <p class="soon">
+        <a th:href="@{/classes/{id}/sessions(id=${classSession.classGroup.id})}">회차 목록</a>
+        <span class="sep">·</span>
+        <span th:text="${classSession.classGroup.name}">화목 A반</span>
+        <span class="sep">·</span>
+        <span th:text="${classSession.classGroup.scheduleText}">화목 15:00~16:30</span>
+        <span class="sep">·</span>
+        담당 <span th:text="${classSession.teacher != null} ? ${classSession.teacher.name} : '—'">포비</span>
+    </p>
+
+    <form method="post" id="recordForm"
+          th:action="@{/sessions/{id}(id=${classSession.id})}" th:object="${form}">
+
+        <div class="flash err errlist" th:if="${#fields.hasAnyErrors()}">
+            <p th:each="e : ${#fields.allErrors()}" th:text="${e}">입력을 확인해 주세요.</p>
+        </div>
+
+        <h2 class="sec">진도 <span class="tag">반 공통</span></h2>
+
+        <div class="card">
+            <p class="hint" th:if="${prevSession != null}">
+                지난 회차 <b th:text="${prevSession.sessionDate}">2026-08-13</b> ·
+                진도 <b th:text="${prevSession.progressText} ?: '—'">개념원리 p.42~55</b> ·
+                과제 <b th:text="${prevSession.homework} ?: '—'">유형서 12~18번</b>
+            </p>
+
+            <div class="fieldrow">
+                <div>
+                    <label for="textbook">교재</label>
+                    <input type="text" th:field="*{textbook}" maxlength="100" placeholder="개념원리">
+                </div>
+                <div>
+                    <label for="rangeText">범위</label>
+                    <input type="text" th:field="*{rangeText}" maxlength="100" placeholder="p.42~55">
+                </div>
+            </div>
+
+            <label for="content">오늘 한 것</label>
+            <input type="text" th:field="*{content}" maxlength="500" placeholder="분수의 나눗셈 개념 + 기본 문제">
+
+            <label for="homework">오늘 내준 과제</label>
+            <input type="text" th:field="*{homework}" maxlength="500" placeholder="유형서 12~18번">
+
+            <label for="dailyNote">수업 메모 <span class="tag">반 전체</span></label>
+            <textarea th:field="*{dailyNote}" placeholder="그날 반 전체에 있었던 일. 학생 한 명에 대한 것은 아래 학생 메모에 적습니다"></textarea>
+
+            <p class="hint">
+                이 네 칸은 저장할 때 학생 한 명 한 명의 진도기록으로 <b>복사</b>됩니다.
+                학생별로 다시 적지 않습니다.
+            </p>
+        </div>
+
+        <h2 class="sec">
+            출결 · 지난 과제 · 학생 메모
+            <span class="cnt" th:text="${#lists.size(form.entries)}">0</span>
+            <button type="button" class="btn small s-fill" id="allPresent"
+                    th:if="${not #lists.isEmpty(form.entries)}">빈 칸 전원 출석</button>
+        </h2>
+
+        <p class="empty" th:if="${#lists.isEmpty(form.entries)}">
+            이 반에 소속된 학생이 없습니다.<br>
+            반 정보 화면에서 학생을 먼저 넣어 주세요.
+        </p>
+
+        <div th:if="${not #lists.isEmpty(form.entries)}">
+
+            <!--
+              폰에도 필요한 두 줄만 남기고 키보드 설명은 .keyhint-pc 로 감싼다.
+              app.css 가 (hover: none) and (pointer: coarse) 에서 그 span 을 감춘다.
+              360px 폭에서 이 안내가 8~9줄(약 190px)을 차지하면, 위의 진도 카드까지 합쳐
+              첫 학생의 출결 칩에 닿기까지 한 화면 반을 스크롤해야 한다. 30초 기록이 아니게 된다.
+            -->
+            <p class="keyhint">
+                출결은 <b>누르면 찍히고 한 번 더 누르면 해제</b>됩니다. 안 찍은 학생은 <b>미표시</b>로 남습니다.
+                미표시는 출석이 아니라 <b>확인하지 않았다</b>는 뜻이라 기록을 만들지 않습니다.<span class="keyhint-pc"><br>
+                PC 에서는 <b>Tab</b> 이 같은 칸을 따라 아래로 내려갑니다.
+                출결에서 <b>Tab 만 연타하면 전원 출석</b>, 다 훑으면 <b>학생 메모</b> 첫 칸으로 넘어갑니다.
+                방향키로 출결을 고르고, 메모에서 <b>Enter</b> 는 다음 학생입니다.</span>
+            </p>
+
+            <div class="srow" th:each="entry, st : *{entries}">
+
+                <input type="hidden" th:field="*{entries[__${st.index}__].studentId}">
+
+                <div class="sname">
+                    <span class="s-name" th:text="${entry.studentName}">김민준</span>
+                    <span class="s-sub" th:text="${entry.studentGrade} ?: ''">초6</span>
+                </div>
+
+                <div class="smarks">
+                    <div class="seg att">
+                        <label th:each="opt : ${attendanceOptions}">
+                            <input type="radio" th:field="*{entries[__${st.index}__].attendance}" th:value="${opt}">
+                            <span th:text="${opt.label}">출석</span>
+                        </label>
+                    </div>
+
+                    <div class="hw">
+                        <span class="hw-label">지난 과제</span>
+                        <div class="seg hwseg">
+                            <label th:each="opt : ${homeworkOptions}">
+                                <input type="radio" th:field="*{entries[__${st.index}__].homeworkStatus}" th:value="${opt}">
+                                <span th:text="${opt.label}">다 함</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <input type="text" class="smemo" maxlength="500"
+                       th:field="*{entries[__${st.index}__].note}"
+                       placeholder="학생 메모 — 눈에 띈 것만. 없으면 비워 두세요">
+
+            </div>
+        </div>
+
+        <!-- 학생이 없는 반이어도 저장 버튼은 있어야 한다. 진도와 수업 메모는 학생과 무관하게 적는다 -->
+        <div class="savebar">
+            <button class="btn primary wide" type="submit" id="saveBtn">저장</button>
+        </div>
+
+    </form>
+
+    <div class="actions">
+        <a class="btn wide" th:href="@{/classes/{id}/sessions(id=${classSession.classGroup.id})}">회차 목록</a>
+        <form method="post" th:action="@{/sessions/{id}/hide(id=${classSession.id})}"
+              onsubmit="return confirm('이 회차를 목록에서 숨길까요?\n\n기록은 지워지지 않습니다. 같은 날짜로 다시 열면 되살아납니다.');">
+            <button type="submit" class="btn quiet">이 회차 숨기기</button>
+        </form>
+    </div>
+
+</main>
+
+<script>
+    // 회차 화면의 조작감. 이 화면은 매일 열리므로 타수가 늘어나는 설계는 실패다.
+    (function () {
+        var form = document.getElementById('recordForm');
+        if (!form) return;
+
+        var rows = Array.prototype.slice.call(form.querySelectorAll('.srow'));
+        if (!rows.length) return;
+
+        var saveBtn = document.getElementById('saveBtn');
+        var memos = rows.map(function (row) { return row.querySelector('input.smemo'); });
+        var attGroups = rows.map(function (row) { return radiosIn(row, '.att'); });
+        var hwGroups = rows.map(function (row) { return radiosIn(row, '.hwseg'); });
+
+        function radiosIn(row, selector) {
+            var box = row.querySelector(selector);
+            return box ? Array.prototype.slice.call(box.querySelectorAll('input[type=radio]')) : [];
+        }
+
+        function checkedOf(group) {
+            for (var i = 0; i < group.length; i++) {
+                if (group[i].checked) return group[i];
+            }
+            return null;
+        }
+
+        function focusGroup(groups, i) {
+            var group = groups[i];
+            if (!group || !group.length) return;
+            (checkedOf(group) || group[0]).focus();
+        }
+
+        function focusMemo(i) {
+            var memo = memos[i];
+            if (!memo) return;
+            memo.focus();
+            memo.select();
+        }
+
+        // 라디오는 한 번 고르면 해제할 수 없다.
+        // 그런데 미표시(확인 안 함)와 출석은 다른 정보다. 잘못 누른 것을 되돌릴 길이 없으면
+        // 확인하지도 않은 출석이 기록에 남는다. 그래서 라벨의 기본 동작을 막고 직접 토글한다.
+        function toggle(group, radio) {
+            var was = radio.checked;
+            group.forEach(function (r) { r.checked = false; });
+            if (!was) radio.checked = true;
+            radio.focus();
+        }
+
+        function wireToggle(group) {
+            group.forEach(function (radio) {
+                radio.parentElement.addEventListener('click', function (e) {
+                    // 마우스·터치가 만든 click 만 토글한다. 합성 click 은 detail 이 0 이다.
+                    //
+                    // 방향키나 Space 로 라디오를 활성화하면 브라우저가 활성화 절차의 일부로
+                    // input 에 click 을 합성 발생시키고, 그 시점에 checked 는 이미 true 다.
+                    // 그 이벤트가 label 로 버블링해 이 핸들러가 방금 켜진 것을 즉시 끈다.
+                    // 그러면 위 .keyhint 가 안내한 '방향키로 출결을 고르기' 가 아예 동작하지 않는다.
+                    if (e.detail === 0) return;
+                    e.preventDefault();
+                    toggle(group, radio);
+                });
+                // 합성 click 을 위에서 빼 놨으므로 Space 는 여기서 직접 받는다.
+                // 키보드로도 해제할 수 있어야 한다 — 미표시(확인 안 함)와 출석은 다른 정보다
+                radio.addEventListener('keydown', function (e) {
+                    if (e.key !== ' ') return;
+                    e.preventDefault();
+                    toggle(group, radio);
+                });
+            });
+        }
+
+        /*
+         * Tab 은 같은 칸에서만 아래로 움직인다.
+         * 기본 동작대로 두면 출결 -> 지난 과제 -> 메모를 지그재그로 오가서 출결만 훑을 수가 없다.
+         *
+         * fillFirst 는 출결에만 준다. Tab 연타 = 전원 출석이 되게 하는 것인데,
+         * 지난 과제는 안 물어봤으면 미확인이어야 하므로 자동으로 채우지 않는다.
+         */
+        function wireColumn(groups, fillFirst, onPastEnd) {
+            groups.forEach(function (group, i) {
+                group.forEach(function (radio) {
+                    radio.addEventListener('keydown', function (e) {
+                        if (e.key !== 'Tab') return;
+                        if (e.shiftKey) {
+                            // 첫 줄에서는 기본 동작에 맡긴다. 안 그러면 위로 나갈 수 없어 갇힌다
+                            if (i === 0) return;
+                            e.preventDefault();
+                            focusGroup(groups, i - 1);
+                            return;
+                        }
+                        e.preventDefault();
+                        if (fillFirst && !checkedOf(group)) {
+                            var present = group.filter(function (r) { return r.value === 'PRESENT'; })[0];
+                            (present || group[0]).checked = true;
+                        }
+                        if (i + 1 < groups.length) focusGroup(groups, i + 1);
+                        else onPastEnd();
+                    });
+                });
+            });
+        }
+
+        attGroups.forEach(wireToggle);
+        hwGroups.forEach(wireToggle);
+
+        wireColumn(attGroups, true, function () { focusMemo(0); });
+        // 지난 과제 칸은 Tab 연타 경로에 없다. 탭으로 들어왔을 때 같은 칸을 따라 내려가기만 하면 된다
+        wireColumn(hwGroups, false, function () { focusMemo(0); });
+
+        memos.forEach(function (memo, i) {
+            if (!memo) return;
+            memo.addEventListener('keydown', function (e) {
+                // 한글 입력 중의 Enter 는 글자를 확정하는 것이지 다음 칸으로 가라는 뜻이 아니다.
+                // isComposing 을 안 보면 "민준이가"의 마지막 글자를 확정하려던 Enter 로 칸이 넘어간다.
+                if (e.isComposing || e.keyCode === 229) return;
+                if (e.key !== 'Tab' && e.key !== 'Enter') return;
+                if (e.key === 'Tab' && e.shiftKey) {
+                    if (i === 0) return;
+                    e.preventDefault();
+                    focusMemo(i - 1);
+                    return;
+                }
+                e.preventDefault();
+                if (i + 1 < memos.length) focusMemo(i + 1);
+                else if (saveBtn) saveBtn.focus();
+            });
+        });
+
+        var fillBtn = document.getElementById('allPresent');
+        if (fillBtn) {
+            fillBtn.addEventListener('click', function () {
+                // 빈 칸만 채운다. 이미 지각·결석을 찍어 둔 줄을 출석으로 덮으면 기록이 거짓이 된다
+                attGroups.forEach(function (group) {
+                    if (!group.length || checkedOf(group)) return;
+                    var present = group.filter(function (r) { return r.value === 'PRESENT'; })[0];
+                    if (present) present.checked = true;
+                });
+            });
+        }
+
+        // 커서는 출결에서 시작한다. 단 폰에서는 화면이 학생 줄까지 밀려 내려가 진도 칸이 안 보이므로
+        // 키보드로 몰아 적는 환경(마우스가 있는 PC)에서만 초점을 옮긴다.
+        if (window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+            focusGroup(attGroups, 0);
+        }
+    })();
+</script>
+</body>
+</html>

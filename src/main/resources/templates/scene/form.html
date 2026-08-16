@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<!--
+  장면 수정 전용. 새로 적는 것은 목록 화면(scene/list.html)에서 끝난다.
+  기록은 지우지 않는다. 잘못 적은 것은 고쳐서 남긴다.
+-->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(~{::title}, ~{::main}, ~{})}">
+<head>
+    <title>장면 수정</title>
+</head>
+<body>
+<main>
+
+    <h1>
+        장면 수정
+        <span class="s-sub" th:text="${student.name}">김민준</span>
+    </h1>
+
+    <form method="post" th:action="@{/scenes/{sid}(sid=${scene.id})}" th:object="${form}">
+        <div class="card">
+
+            <label for="occurredOn">있었던 날 <span class="req">*</span></label>
+            <input type="date" id="occurredOn" th:field="*{occurredOn}" required>
+            <p class="error" th:if="${#fields.hasErrors('occurredOn')}" th:errors="*{occurredOn}"></p>
+
+            <label for="situation">어떤 상황</label>
+            <input type="text" id="situation" th:field="*{situation}"
+                   placeholder="쉬는 시간에 / 채점 직후 / 오답을 같이 보다가">
+            <p class="error" th:if="${#fields.hasErrors('situation')}" th:errors="*{situation}"></p>
+
+            <label for="content">무엇을 했고 무슨 말을 했나 <span class="req">*</span></label>
+            <textarea id="content" th:field="*{content}" required
+                      placeholder="5분 일찍 와서 지난 오답 3번을 다시 풀었다."></textarea>
+            <p class="error" th:if="${#fields.hasErrors('content')}" th:errors="*{content}"></p>
+
+            <p class="q-rule">
+                <b>성격이 아니라 행동을 씁니다.</b><br>
+                <span class="q-bad">성실하다</span> 대신
+                <span class="q-good">5분 일찍 와서 지난 오답을 다시 풀었다</span>.
+            </p>
+
+            <th:block th:replace="~{layout/record :: authorLine(${scene.createdBy}, ${scene.createdAt})}"></th:block>
+
+        </div>
+
+        <div class="actions">
+            <a class="btn wide" th:href="@{/students/{id}/scenes(id=${student.id})}">취소</a>
+            <button class="btn primary wide" type="submit">저장</button>
+        </div>
+    </form>
+
+</main>
+</body>
+</html>

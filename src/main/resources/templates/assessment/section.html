@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<!--
+  평가 카드와, 학생 상세 화면에 붙는 평가 섹션.
+
+  마크업을 student/detail.html 에 직접 넣지 않고 여기 두는 이유:
+  그 파일은 여섯 기능이 동시에 손대는 공용 화면이다. 통합 담당은 한 줄만 넣으면 되고,
+  카드 모양을 고칠 때 공용 화면을 다시 건드릴 일이 없다.
+
+  카드도 조각으로 뽑아 둔다. 평가 목록과 학생 상세가 같은 카드를 써야
+  점수·태그 칩의 모양이 두 화면에서 갈라지지 않는다.
+
+  CSS 는 static/css/parts/assessment.css.
+-->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  평가 한 건 카드. 카드 전체가 상세로 가는 링크다.
+
+  withQuote=false 면 아이가 쓴 문장을 접는다. 학생 상세처럼 여섯 종류의 기록이
+  함께 사는 화면에서는 인용문까지 펼치면 평가가 화면을 다 먹는다.
+
+  th:each 와 th:replace 를 같은 태그에 쓰지 마라. 목록이 한 건만 나온다.
+    <th:block th:each="a : ${assessments}">
+        <a th:replace="~{assessment/section :: card(${a}, true)}"></a>
+    </th:block>
+-->
+<a class="rec-card as-card" th:fragment="card(a, withQuote)"
+   th:href="@{/assessments/{aid}(aid=${a.id})}">
+    <p class="rec-title">
+        <span th:text="${a.assessedOn}">2026-08-18</span>
+        <span class="as-type" th:text="${a.type.label}">백지</span>
+        <span class="as-status" th:if="${a.unitStatus != null}"
+              th:text="${a.unitStatus.label}">◎ 아주 좋음</span>
+    </p>
+    <p class="rec-meta">
+        <span th:text="${a.unitName} ?: '단원 미기재'">분수의 나눗셈</span>
+        <!-- 만점이 없으면 백분율 칸도 없다. 0으로 나누지 않는다 -->
+        <th:block th:if="${a.scoreText != null}">
+            <span class="rec-sep">·</span>
+            <span th:text="${a.scoreText}">18 / 20</span>
+            <span th:if="${a.percent != null}" th:text="'(' + ${a.percent} + '%)'">(90%)</span>
+        </th:block>
+    </p>
+    <p class="as-tags-view" th:if="${not #lists.isEmpty(a.errorTags)}">
+        <span class="as-tag" th:each="t : ${a.errorTags}">
+            <span th:text="${t.tagCode.label}">계산</span>
+            <b th:text="${t.cnt}">3</b>
+        </span>
+    </p>
+    <p class="rec-body" th:if="${withQuote and a.studentQuote != null}"
+       th:text="${a.studentQuote}">뒤집어서 곱하면 되는데 왜 그런지는 모르겠다</p>
+</a>
+
+
+<!--
+  학생 상세 화면의 평가 섹션.
+
+  쓰는 쪽 (student/detail.html):
+    <th:block th:replace="~{assessment/section :: studentSection(${student}, ${assessments})}"></th:block>
+
+  StudentController.detail 이 model 에 assessments 를 넣어야 한다
+  (AssessmentService.history(id)). 없으면 이 섹션은 "아직 없습니다" 로 나온다.
+-->
+<div th:fragment="studentSection(student, assessments)">
+
+    <th:block th:replace="~{layout/record :: sectionHead('평가', ${#lists.size(assessments)},
+                            @{/students/{id}/assessments/new(id=${student.id})}, '+ 평가')}"></th:block>
+
+    <th:block th:if="${#lists.isEmpty(assessments)}">
+        <th:block th:replace="~{layout/record :: emptyRecord(
+            '아직 평가 기록이 없습니다.',
+            '점수만 남기면 리포트에 쓸 것이 없습니다. 어떤 유형을 몇 개 틀렸는지까지 적어야 리포트 2-2 오답 분포와 처방이 채워집니다.')}"></th:block>
+    </th:block>
+
+    <!-- 최근 세 건만. 나머지는 평가 목록에서 본다 -->
+    <th:block th:each="a, st : ${assessments}" th:if="${st.index < 3}">
+        <a th:replace="~{assessment/section :: card(${a}, false)}"></a>
+    </th:block>
+
+    <div class="actions" th:if="${not #lists.isEmpty(assessments)}">
+        <a class="btn wide" th:href="@{/students/{id}/assessments(id=${student.id})}"
+           th:text="'평가 전체 보기 (' + ${#lists.size(assessments)} + '건)'">평가 전체 보기</a>
+    </div>
+
+</div>
+
+</body>
+</html>

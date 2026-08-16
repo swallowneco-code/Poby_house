@@ -62,8 +62,10 @@ public class SecurityConfig {
                         .passwordParameter("password")
                         // alwaysUse 를 켜지 않는다.
                         // 켜 두면 세션이 끊겨 다시 로그인했을 때 보던 화면으로 돌아가지 못하고
-                        // 늘 학생 목록으로 튕긴다. 인자 없는 형태는 원래 가려던 곳을 기억한다
-                        .defaultSuccessUrl("/students")
+                        // 늘 이 주소로 튕긴다. 인자 없는 형태는 원래 가려던 곳을 기억한다.
+                        // 착지 화면은 홈 대시보드다. 학생 목록은 누가 있는지만 알려 주고
+                        // 오늘 무엇이 밀렸는지는 말해 주지 않는다
+                        .defaultSuccessUrl("/")
                         .failureHandler(loginFailureHandler)
                         .permitAll())
                 .rememberMe(remember -> remember.rememberMeServices(rememberMeServices))

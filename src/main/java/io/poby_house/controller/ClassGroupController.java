@@ -78,6 +78,7 @@ public class ClassGroupController {
 
     @PostMapping("/{id}")
     public String update(@PathVariable Long id,
+                         @AuthenticationPrincipal TeacherPrincipal principal,
                          @Valid @ModelAttribute("form") ClassGroupForm form,
                          BindingResult bindingResult,
                          Model model,
@@ -87,7 +88,7 @@ public class ClassGroupController {
             model.addAttribute("editing", true);
             return "classgroup/form";
         }
-        classGroupService.update(id, form);
+        classGroupService.update(id, form, principal.getId());
         redirect.addFlashAttribute("message", "수정했습니다.");
         return "redirect:/classes/" + id;
     }
@@ -108,7 +109,9 @@ public class ClassGroupController {
                           @PathVariable Long enrollmentId,
                           RedirectAttributes redirect) {
         classGroupService.releaseStudent(enrollmentId, LocalDate.now());
-        redirect.addFlashAttribute("message", "반에서 뺐습니다. 지난 기록은 그대로 남습니다.");
+        // 잘못 눌렀을 때 되돌리는 길을 함께 알린다. 안 적으면 배정을 되살릴 방법을 찾다가 화면을 뜬다
+        redirect.addFlashAttribute("message",
+                "반에서 뺐습니다. 지난 기록은 그대로 남습니다. 다시 넣으려면 아래 '학생 추가' 에서 고르세요.");
         return "redirect:/classes/" + id;
     }
 }

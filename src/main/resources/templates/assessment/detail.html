@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(~{::title}, ~{::main}, ~{})}">
+<head>
+    <title th:text="${student.name} + ' - ' + ${assessment.type.label} + ' 평가'">평가</title>
+</head>
+<body>
+<main>
+
+    <h1>
+        <span th:text="${assessment.type.label}">백지</span> 평가
+        <!-- 약함을 초록 배지로 두면 훑어볼 때 괜찮은 단원으로 읽힌다. 색이 뜻을 뒤집지 않게 나눈다 -->
+        <span class="badge" th:if="${assessment.unitStatus != null}"
+              th:classappend="${assessment.unitStatus.name() == 'WEAK'} ? 'PAUSED' : 'ACTIVE'"
+              th:text="${assessment.unitStatus.label}">◎ 아주 좋음</span>
+    </h1>
+    <p class="hint">
+        <a th:href="@{/students/{id}(id=${student.id})}" th:text="${student.name}">김민준</a>
+        <span class="code" th:text="${student.code}">S2026001</span>
+    </p>
+
+    <div class="card">
+        <dl class="detail">
+            <div><dt>평가한 날</dt><dd th:text="${assessment.assessedOn}">2026-08-18</dd></div>
+            <div><dt>단원</dt><dd th:text="${assessment.unitName} ?: '—'">분수의 나눗셈</dd></div>
+            <div>
+                <dt>점수</dt>
+                <dd>
+                    <span th:text="${assessment.scoreText} ?: '—'">18 / 20</span>
+                    <!-- 만점이 없거나 0이면 백분율은 계산하지 않는다. 0으로 나누지 않는다 -->
+                    <span class="as-percent" th:if="${assessment.percent != null}"
+                          th:text="${assessment.percent} + '%'">90%</span>
+                </dd>
+            </div>
+            <div><dt>단원 상태</dt>
+                <dd th:text="${assessment.unitStatus != null} ? ${assessment.unitStatus.label} : '—'">—</dd>
+            </div>
+        </dl>
+    </div>
+
+    <!-- 4축은 백지에서만 뜻이 있다. 다른 종류에서는 저장 자체가 안 되므로 칸도 보이지 않는다 -->
+    <th:block th:if="${assessment.type.usesBlankAxes()}">
+        <h2 class="sec">백지 4축</h2>
+        <div class="card">
+            <th:block th:replace="~{assessment/axes :: axes(${assessment})}"></th:block>
+            <p class="hint">5가 가장 잘 쓴 것입니다. 미표시는 확인하지 않은 축입니다.</p>
+        </div>
+    </th:block>
+
+    <h2 class="sec">
+        오답 유형 <span class="cnt" th:text="${#lists.size(assessment.errorTags)}">0</span>
+    </h2>
+
+    <div class="card">
+        <p class="as-tags-view" th:if="${not #lists.isEmpty(assessment.errorTags)}">
+            <span class="as-tag" th:each="t : ${assessment.errorTags}">
+                <span th:text="${t.tagCode.label}">계산</span>
+                <b th:text="${t.cnt}">3</b>
+            </span>
+        </p>
+        <p class="soon" th:if="${#lists.isEmpty(assessment.errorTags)}">
+            오답 유형을 적지 않았습니다. 지금 채워 두면 이 학생의 오답 분포에 함께 잡힙니다.
+        </p>
+    </div>
+
+    <th:block th:if="${assessment.studentQuote != null}">
+        <h2 class="sec">아이가 쓴 문장</h2>
+        <div class="card">
+            <blockquote class="as-quote" th:text="${assessment.studentQuote}">
+                뒤집어서 곱하면 되는데 왜 그런지는 모르겠다
+            </blockquote>
+            <p class="hint">아이가 쓴 그대로입니다. 리포트에서 이 문장을 그대로 인용합니다.</p>
+        </div>
+    </th:block>
+
+    <div class="card">
+        <dl class="detail">
+            <div>
+                <dt>원본 위치</dt>
+                <dd th:text="${assessment.sourceLocation} ?: '—'">2026-1학기 파일 3번째</dd>
+            </div>
+            <div><dt>메모</dt><dd th:text="${assessment.note} ?: '—'">—</dd></div>
+        </dl>
+        <p class="hint">시험지는 학원에 그대로 둡니다. 이 화면에는 어디 있는지만 남깁니다.</p>
+        <th:block th:replace="~{layout/record :: authorLine(${assessment.createdBy}, ${assessment.createdAt})}"></th:block>
+    </div>
+
+    <div class="actions">
+        <a class="btn wide" th:href="@{/students/{id}/assessments(id=${student.id})}">평가 목록</a>
+        <a class="btn primary wide" th:href="@{/assessments/{aid}/edit(aid=${assessment.id})}">수정</a>
+    </div>
+
+</main>
+</body>
+</html>

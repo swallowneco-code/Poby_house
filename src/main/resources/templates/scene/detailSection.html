@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<!--
+  학생 상세 화면에 붙는 장면 섹션.
+
+  조각으로 빼 둔 이유: student/detail.html 은 여섯 기능이 함께 고치는 공용 파일이다.
+  마크업을 그 파일에 직접 넣으면 통합할 때마다 여섯 군데가 충돌한다.
+  통합 담당은 한 줄만 넣는다.
+
+  쓰는 쪽 (student/detail.html):
+    <th:block th:replace="~{scene/detailSection :: section(${student}, ${scenes})}"></th:block>
+
+  StudentController.detail 이 모델에 넣어야 하는 것:
+    model.addAttribute("scenes", sceneService.history(id));
+-->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<th:block th:fragment="section(student, scenes)">
+
+    <!-- 추가 버튼이 목록 화면으로 간다. 장면은 등록 폼이 목록과 한 화면이라 /new 가 없다 -->
+    <th:block th:replace="~{layout/record :: sectionHead('장면', ${#lists.size(scenes)},
+                            @{/students/{id}/scenes(id=${student.id})}, '+ 장면')}"></th:block>
+
+    <th:block th:if="${#lists.isEmpty(scenes)}">
+        <th:block th:replace="~{layout/record :: emptyRecord(
+            '아직 장면 기록이 없습니다.',
+            '수업 중 한 장면을 적어 두면 리포트 4-1 편지의 재료가 됩니다. 분기에 한 개면 충분합니다.')}"></th:block>
+    </th:block>
+
+    <!-- 상세 화면에서는 최근 두 건까지만. 전체는 장면 화면에서 본다 -->
+    <th:block th:each="sc, st : ${scenes}" th:if="${st.index < 2}">
+        <div th:replace="~{layout/record :: recordCard(${sc.occurredOn}, ${sc.situation}, ${sc.content})}"></div>
+    </th:block>
+
+    <p class="hint" th:if="${#lists.size(scenes) > 2}">
+        <a th:href="@{/students/{id}/scenes(id=${student.id})}"
+           th:text="'장면 ' + ${#lists.size(scenes)} + '건 전체 보기'">전체 보기</a>
+    </p>
+
+</th:block>
+
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(~{::title}, ~{::main}, ~{})}">
+<head>
+    <title th:text="${group.name} + ' - 수업 회차'">수업 회차</title>
+</head>
+<body>
+<main>
+
+    <h1>
+        <span th:text="${group.name}">화목 A반</span> 수업 회차
+    </h1>
+
+    <p class="soon">
+        <span th:text="${group.scheduleText}">화목 15:00~16:30</span>
+        <span class="sep">·</span>
+        <a th:href="@{/classes/{id}(id=${group.id})}">반 정보</a>
+    </p>
+
+    <div class="card">
+        <form method="post" th:action="@{/classes/{id}/sessions(id=${group.id})}">
+            <label for="date">회차 열기</label>
+            <div class="inline">
+                <input type="date" id="date" name="date" th:value="${today}">
+                <button class="btn primary" type="submit">기록하기</button>
+            </div>
+            <p class="hint" th:if="${todayOpened}">
+                오늘 회차는 이미 열려 있습니다. 그대로 누르면 <b>이어서</b> 씁니다.
+            </p>
+            <p class="hint" th:unless="${todayOpened}">
+                날짜는 오늘로 맞춰져 있습니다. 그대로 누르면 오늘 회차가 열립니다.
+            </p>
+            <p class="hint">
+                같은 날짜를 다시 열면 그 회차를 이어 씁니다. 아무것도 안 적은 회차는 목록에 남지 않습니다.
+            </p>
+        </form>
+    </div>
+
+    <h2 class="sec">기록한 회차 <span class="cnt" th:text="${recordedCount}">0</span></h2>
+
+    <div class="toolbar" th:if="${not #lists.isEmpty(months)}">
+        <a class="chip" th:each="m : ${months}"
+           th:classappend="${m == selectedMonth} ? 'on'"
+           th:href="@{/classes/{id}/sessions(id=${group.id},month=${m})}"
+           th:text="${#strings.replace(m,'-','.')}">2026.08</a>
+    </div>
+
+    <p class="empty" th:if="${#lists.isEmpty(rows)}">
+        아직 기록한 회차가 없습니다.<br>
+        위에서 <b>기록하기</b>를 누르면 오늘 회차가 열립니다.
+    </p>
+
+    <ul class="sessions">
+        <li th:each="r : ${rows}">
+            <div class="row">
+                <a class="rowmain" th:href="@{/sessions/{id}(id=${r.session.id})}">
+                    <span class="sdate" th:text="${r.session.sessionDate} + ' (' + ${r.weekday} + ')'">2026-08-18 (화)</span>
+                    <span class="snote" th:text="${r.summary} ?: '진도 미기록'">p.42~55</span>
+                    <br>
+                    <span class="code" th:if="${not r.attendanceMissing}"
+                          th:text="'출결 ' + ${r.attendanceCount} + '명 · 진도기록 ' + ${r.progressCount} + '명'">출결 6명</span>
+                    <span class="code warnmark" th:if="${r.attendanceMissing}">출결 미표시</span>
+                </a>
+                <form method="post" th:action="@{/sessions/{id}/hide(id=${r.session.id})}"
+                      onsubmit="return confirm('이 회차를 목록에서 숨길까요?\n\n기록은 지워지지 않습니다. 같은 날짜로 다시 열면 되살아납니다.');">
+                    <button type="submit" class="btn small quiet">숨기기</button>
+                </form>
+            </div>
+        </li>
+    </ul>
+
+    <p class="hint" th:if="${not #lists.isEmpty(rows)}">
+        숨긴 회차는 목록에 안 보입니다. 위에서 그 날짜로 <b>기록하기</b>를 누르면 그대로 되살아납니다.
+    </p>
+
+</main>
+</body>
+</html>

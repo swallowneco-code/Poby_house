@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(~{::title}, ~{::main}, ~{})}">
+<head>
+    <title th:text="${student.name} + ' - 상담 수정'">상담 수정</title>
+</head>
+<body>
+<main>
+
+    <h1>상담 수정</h1>
+    <p class="hint">
+        <span th:text="${student.name}">김민준</span>
+        <span class="rec-sep">·</span>
+        <span th:text="${consultation.consultedOn} + ' 상담'">2026-08-18 상담</span>
+    </p>
+
+    <form method="post" th:action="@{/consultations/{cid}(cid=${consultation.id})}" th:object="${form}">
+        <div class="card">
+            <th:block th:replace="~{consultation/fields :: notes}"></th:block>
+        </div>
+        <div class="actions">
+            <a class="btn wide" th:href="@{/students/{id}/consultations(id=${student.id})}">취소</a>
+            <button class="btn primary wide" type="submit">저장</button>
+        </div>
+    </form>
+
+    <!-- 기록은 지우지 않는다. 잘못 적었으면 여기서 고친다.
+         작성자는 바꾸지 않는다. 처음 상담한 사람이 누구였는지가 남아야 나중에 물어볼 사람을 안다.
+         (authorLine 이 <p> 를 그리므로 <p class="hint"> 안에 넣지 않는다. p 안의 p 는 브라우저가 끊어 버린다) -->
+    <div class="cons-origin">
+        <p class="hint">처음 적은 사람은 바뀌지 않습니다.</p>
+        <th:block th:replace="~{layout/record :: authorLine(${consultation.createdBy}, ${consultation.createdAt})}"></th:block>
+    </div>
+
+</main>
+</body>
+</html>

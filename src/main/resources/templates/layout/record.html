@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<!--
+  기록 화면 공용 킷.
+
+  진도 · 관찰 · 장면 · 개입 · 평가 · 상담 화면이 전부 이 조각들 위에 올라간다.
+  같은 것을 화면마다 다시 그리면 여섯 화면의 여백과 글자 크기가 조금씩 어긋나고,
+  "기록이 없다" 는 안내만 여섯 가지 문장으로 늘어난다.
+
+  CSS 는 static/css/parts/record-kit.css 에 있다. 클래스 이름을 바꾸면 그 파일도 함께 고쳐야 한다.
+  base.html 과 마찬가지로 각 fragment 주석에 쓰는 쪽 예시를 남긴다.
+
+  이 킷으로 안 되는 카드(점수 칩, 태그 칩처럼 마크업이 필요한 것)는
+  recordCard 를 억지로 쓰지 말고 <article class="rec-card"> 를 직접 쓴다.
+  클래스 이름만 맞으면 모양은 같다.
+-->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  섹션 제목 + 개수 + 우측 추가 버튼.
+  h2.sec / .cnt 는 app.css 의 것을 그대로 쓴다. 상세 화면의 다른 섹션과 같은 모양이어야 한다.
+
+  쓰는 쪽:
+    <th:block th:replace="~{layout/record :: sectionHead('장면', ${#lists.size(scenes)},
+                            @{/students/{id}/scenes/new(id=${student.id})}, '+ 장면')}"></th:block>
+
+  newHref 에 null 을 넘기면 버튼이 안 나온다 (퇴원생 화면처럼 더 적을 수 없는 곳).
+  newLabel 을 null 로 두면 '+ 추가' 가 쓰인다.
+-->
+<h2 class="sec" th:fragment="sectionHead(title, count, newHref, newLabel)">
+    <span th:text="${title}">기록</span>
+    <span class="cnt" th:text="${count} ?: 0">0</span>
+    <a th:if="${newHref}" class="btn small primary rec-add"
+       th:href="${newHref}" th:text="${newLabel} ?: '+ 추가'">+ 추가</a>
+</h2>
+
+
+<!--
+  기록이 하나도 없을 때.
+
+  hint 에는 "무엇을 적으면 리포트의 어느 칸이 채워지는가" 를 적는다.
+  이 앱의 최종 목적물은 퇴원생 리포트다. 지금 이 칸을 왜 채우는지 모르면 아무도 안 적는다.
+  "조건에 맞는 것이 없다" 는 다른 안내다. 그때는 app.css 의 .nomatch 를 쓴다.
+
+  쓰는 쪽:
+    <th:block th:replace="~{layout/record :: emptyRecord(
+        '아직 장면 기록이 없습니다.',
+        '수업 중에 있었던 한 장면을 적어 두면 리포트 4-1 편지의 재료가 됩니다.')}"></th:block>
+-->
+<div class="rec-empty" th:fragment="emptyRecord(message, hint)">
+    <p class="rec-empty-msg" th:text="${message} ?: '아직 기록이 없습니다.'">아직 기록이 없습니다.</p>
+    <p class="rec-empty-hint" th:if="${hint}" th:text="${hint}"></p>
+</div>
+
+
+<!--
+  기록 카드의 날짜 줄. 날짜가 없으면 '—' 를 쓴다 (빈칸으로 두지 않는다).
+
+  쓰는 쪽:
+    <th:block th:replace="~{layout/record :: dateRow('있었던 날', ${scene.occurredOn})}"></th:block>
+-->
+<p class="rec-date" th:fragment="dateRow(label, date)">
+    <span class="rec-date-label" th:text="${label}">날짜</span>
+    <span class="rec-date-value" th:text="${date} ?: '—'">2026-08-18</span>
+</p>
+
+
+<!--
+  1~5 점수를 칩 라디오로. 5가 최상이다. 방향을 뒤집으면 지난 기록과 비교가 어긋난다.
+
+  폰에서 한 번 탭으로 고르게 하는 것이 목적이다. select 로 두면 고를 때마다 두 번 탭이다.
+  실제 input[type=radio] 는 감추고 label 을 칩으로 그린다. 지우지 않고 감추는 이유:
+  라디오가 살아 있어야 Tab · 방향키 · 스크린리더가 그대로 동작한다.
+
+  '미표시' 칩을 하나 더 둔다. 라디오는 한 번 고르면 해제할 수 없는데,
+  "확인하지 않았다(null)" 와 "1점" 은 다른 정보다. 잘못 누른 것을 되돌릴 길이 있어야 한다.
+  value 가 빈 문자열이라 Integer 필드에 null 로 바인딩된다.
+
+  쓰는 쪽:
+    <label>이해도</label>
+    <th:block th:replace="~{layout/record :: scaleInput('understanding', ${form.understanding},
+                            '아직 어렵다', '혼자 푼다')}"></th:block>
+-->
+<div class="scale" th:fragment="scaleInput(name, value, lowLabel, highLabel)">
+    <span class="scale-end" th:text="${lowLabel} ?: '낮음'">낮음</span>
+    <label th:each="n : ${#numbers.sequence(1, 5)}">
+        <input type="radio" th:name="${name}" th:value="${n}"
+               th:checked="${value != null and value == n}">
+        <span th:text="${n}">1</span>
+    </label>
+    <span class="scale-end" th:text="${highLabel} ?: '높음'">높음</span>
+    <label class="scale-none">
+        <input type="radio" th:name="${name}" value="" th:checked="${value == null}">
+        <span>미표시</span>
+    </label>
+</div>
+
+
+<!--
+  "포비 · 2026-08-18 기록".
+  누가 적었는지가 남아야 몇 년 뒤에 리포트를 쓸 때 물어볼 사람을 안다.
+
+  createdBy 는 Teacher, createdAt 은 LocalDateTime 또는 LocalDate 둘 다 받는다.
+  #temporals 는 Thymeleaf 3.1 코어에 들어 있다. 따로 의존성을 넣지 않는다.
+
+  쓰는 쪽:
+    <th:block th:replace="~{layout/record :: authorLine(${scene.createdBy}, ${scene.createdAt})}"></th:block>
+-->
+<p class="rec-author" th:fragment="authorLine(createdBy, createdAt)">
+    <span th:text="${createdBy != null} ? ${createdBy.name} : '작성자 없음'">포비</span>
+    <th:block th:if="${createdAt != null}">
+        <span class="rec-sep">·</span>
+        <span th:text="${#temporals.format(createdAt, 'yyyy-MM-dd')} + ' 기록'">2026-08-18 기록</span>
+    </th:block>
+</p>
+
+
+<!--
+  기록 한 건 카드. title / meta / body 는 전부 문자열이다.
+  body 는 th:text 로 넣고 CSS 가 줄바꿈을 살린다(white-space: pre-wrap).
+  HTML 로 넣지 않는 이유: 학생·학부모의 말이 그대로 들어오는 칸이라 마크업으로 해석하면 안 된다.
+
+  th:each 와 th:replace 를 같은 태그에 함께 쓰지 마라.
+  th:replace 가 먼저 처리돼서 목록이 한 건만 나온다. 아래처럼 감싼다.
+
+  쓰는 쪽:
+    <th:block th:each="sc : ${scenes}">
+        <div th:replace="~{layout/record :: recordCard(${sc.occurredOn}, ${sc.situation}, ${sc.content})}"></div>
+    </th:block>
+-->
+<article class="rec-card" th:fragment="recordCard(title, meta, body)">
+    <p class="rec-title" th:text="${title} ?: '—'">2026-08-18</p>
+    <p class="rec-meta" th:if="${meta}" th:text="${meta}">쉬는 시간에</p>
+    <p class="rec-body" th:text="${body} ?: '—'">남아서 3번을 다시 풀었다.</p>
+</article>
+
+</body>
+</html>

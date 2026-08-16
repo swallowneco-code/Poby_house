@@ -16,15 +16,18 @@
         <div class="card">
 
             <label for="name">반 이름 <span class="req">*</span></label>
-            <input type="text" id="name" th:field="*{name}" placeholder="화목 A반" required autofocus>
+            <!-- maxlength 는 DB 의 VARCHAR 길이와 같다. 폰에서 서버 왕복 전에 막힌다 -->
+            <input type="text" id="name" th:field="*{name}" maxlength="50" placeholder="화목 A반" required autofocus>
             <p class="error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></p>
 
             <label for="level">진도 레벨</label>
-            <input type="text" id="level" th:field="*{level}" placeholder="분수 심화">
+            <input type="text" id="level" th:field="*{level}" maxlength="50" placeholder="분수 심화">
+            <p class="error" th:if="${#fields.hasErrors('level')}" th:errors="*{level}"></p>
             <p class="hint">학년이 아니라 <b>진도</b> 기준입니다. 한 반에 초5·초6·중1이 섞여도 정상입니다.</p>
 
             <label for="dayOfWeek">요일</label>
-            <input type="text" id="dayOfWeek" th:field="*{dayOfWeek}" placeholder="화목">
+            <input type="text" id="dayOfWeek" th:field="*{dayOfWeek}" maxlength="20" placeholder="화목">
+            <p class="error" th:if="${#fields.hasErrors('dayOfWeek')}" th:errors="*{dayOfWeek}"></p>
 
             <label for="startTime">시작 시각</label>
             <input type="time" id="startTime" th:field="*{startTime}">

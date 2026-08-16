@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(~{::title}, ~{::main}, ~{})}">
+<head>
+    <title>보관 만료 파기</title>
+</head>
+<body>
+<main>
+
+    <h1>보관 만료 파기</h1>
+
+    <!--
+      이 화면이 왜 있는지를 화면 안에 적어 둔다.
+      원장이 1년에 몇 번 열지 않는 화면이라, 열었을 때 무엇을 하는 곳인지 기억에 의존하면 안 된다.
+    -->
+    <div class="card">
+        <p>
+            퇴원한 학생의 개인 정보는 <b>퇴원일 + 3년</b>까지만 보관합니다.
+            그 날이 지난 학생이 여기 올라옵니다.
+        </p>
+        <p class="hint">
+            파기는 <b>삭제가 아니라 익명화</b>입니다.
+            학생 행을 지우면 반 배정·출결·진도 기록이 함께 사라져
+            지난 회차의 인원과 반 통계가 소급해서 바뀝니다.
+            그래서 이름·학교·특이사항·퇴원 사유만 지우고, 식별번호와 기록의 뼈대는 남깁니다.
+            남는 것으로는 개인을 특정할 수 없습니다.
+        </p>
+    </div>
+
+    <h2 class="sec">파기 대상 <span class="cnt" th:text="${#lists.size(targets)}">0</span></h2>
+
+    <p class="empty" th:if="${#lists.isEmpty(targets)}">
+        지금 파기해야 할 학생이 없습니다. 보관 기간이 지난 퇴원생이 생기면 여기 올라옵니다.
+    </p>
+
+    <ul class="students">
+        <li th:each="st : ${targets}">
+            <a th:href="@{/admin/purge/{id}(id=${st.id})}">
+                <span>
+                    <span class="s-name" th:text="${st.name}">김민준</span>
+                    <span class="s-sub" th:text="${st.school} ?: ''">대치초</span>
+                    <br>
+                    <span class="code"
+                          th:text="${st.code} + ' · ' + ${st.leftOn} + ' 퇴원'">S2026001 · 2023-08-18 퇴원</span>
+                </span>
+                <span class="s-right">
+                    <span class="badge LEFT" th:text="${st.purgeAfter} + ' 만료'">2026-08-18 만료</span>
+                </span>
+            </a>
+        </li>
+    </ul>
+
+    <div class="actions" th:if="${not #lists.isEmpty(targets)}">
+        <a class="btn wide" th:href="@{/students(status='LEFT')}">퇴원생 목록</a>
+    </div>
+
+</main>
+</body>
+</html>

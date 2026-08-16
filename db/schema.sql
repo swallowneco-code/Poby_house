@@ -55,10 +55,12 @@ CREATE TABLE IF NOT EXISTS Student (
   memo         TEXT                 COMMENT '기본 특이사항',
   createdAt    DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updatedAt    DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  updatedBy    BIGINT               COMMENT '마지막으로 고친 강사 / 여러 명이 같은 학생을 만지므로 누가 고쳤는지가 남아야 한다',
   PRIMARY KEY (id),
   UNIQUE KEY uk_student_code (code),
   KEY idx_student_status (status),
-  KEY idx_student_name (name)
+  KEY idx_student_name (name),
+  CONSTRAINT fk_student_updatedby FOREIGN KEY (updatedBy) REFERENCES Teacher(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='학생';
 
 -- ---------------------------------------------------------------------
@@ -74,9 +76,11 @@ CREATE TABLE IF NOT EXISTS ClassGroup (
   teacherId  BIGINT,
   active     BOOLEAN     NOT NULL DEFAULT TRUE,
   createdAt  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updatedBy  BIGINT               COMMENT '마지막으로 고친 강사',
   PRIMARY KEY (id),
   KEY idx_classgroup_teacher (teacherId),
-  CONSTRAINT fk_classgroup_teacher FOREIGN KEY (teacherId) REFERENCES Teacher(id) ON DELETE SET NULL
+  CONSTRAINT fk_classgroup_teacher   FOREIGN KEY (teacherId) REFERENCES Teacher(id) ON DELETE SET NULL,
+  CONSTRAINT fk_classgroup_updatedby FOREIGN KEY (updatedBy) REFERENCES Teacher(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='반';
 
 CREATE TABLE IF NOT EXISTS Enrollment (
@@ -103,7 +107,14 @@ CREATE TABLE IF NOT EXISTS ClassSession (
   startTime     TIME,
   endTime       TIME,
   teacherId     BIGINT,
-  dailyNote     TEXT              COMMENT '그날 반 전체에 있었던 일',
+  dailyNote     TEXT              COMMENT '수업 메모 / 그날 반 전체에 있었던 일',
+  -- 진도는 반 공통이다. 한 반이 같은 진도를 나가므로 학생 수만큼 다시 입력받지 않는다.
+  -- 반 단위로 한 번 입력받아 학생별 ProgressLog 로 복사 기록하고, 원본은 여기 남긴다.
+  textbook      VARCHAR(100)      COMMENT '교재명 / 반 공통',
+  rangeText     VARCHAR(100)      COMMENT 'p.42~55 형태 / 반 공통',
+  content       VARCHAR(500)      COMMENT '오늘 한 것 / 반 공통',
+  homework      VARCHAR(500)      COMMENT '오늘 내준 과제 / 반 공통',
+  hiddenAt      DATETIME          COMMENT '숨긴 시각. 잘못 연 회차를 지우지 않고 목록에서만 뺀다. 같은 날짜로 다시 열면 되살아난다',
   createdAt     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uk_session (classGroupId, sessionDate),
@@ -116,7 +127,9 @@ CREATE TABLE IF NOT EXISTS Attendance (
   id         BIGINT      NOT NULL AUTO_INCREMENT,
   sessionId  BIGINT      NOT NULL,
   studentId  BIGINT      NOT NULL,
-  status     VARCHAR(20) NOT NULL DEFAULT 'PRESENT' COMMENT 'PRESENT | LATE | ABSENT | MAKEUP',
+  -- DEFAULT 는 남겨 두지만 애플리케이션은 이 기본값에 기대지 않는다.
+  -- 미표시(확인하지 않음)는 행을 만들지 않는 것으로 표현한다. 출석으로 채우면 출석률이 거짓말을 한다.
+  status     VARCHAR(20) NOT NULL DEFAULT 'PRESENT' COMMENT 'PRESENT | LATE | ABSENT | MAKEUP | PAUSED',
   note       VARCHAR(255),
   PRIMARY KEY (id),
   UNIQUE KEY uk_attendance (sessionId, studentId),
@@ -132,11 +145,14 @@ CREATE TABLE IF NOT EXISTS ProgressLog (
   id              BIGINT       NOT NULL AUTO_INCREMENT,
   sessionId       BIGINT       NOT NULL,
   studentId       BIGINT       NOT NULL,
+  -- 아래 네 칸은 ClassSession 의 반 공통 진도를 복사해 둔 값이다.
+  -- 참조로 두지 않는 이유: 나중에 반 진도를 고쳐도 그날 이 학생이 무엇을 했는지는 그대로 남아야 한다.
   textbook        VARCHAR(100)          COMMENT '교재명',
   rangeText       VARCHAR(100)          COMMENT 'p.42~55 형태',
   content         VARCHAR(500)          COMMENT '오늘 한 것',
   homework        VARCHAR(500)          COMMENT '오늘 내준 과제',
   homeworkStatus  VARCHAR(20)           COMMENT '지난 과제 제출: DONE | PARTIAL | NONE',
+  note            VARCHAR(500)          COMMENT '학생 메모 / 그날 이 학생에게 눈에 띈 것. content 는 반 공통이라 개인 메모를 담을 칸이 없다',
   createdBy       BIGINT,
   createdAt       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updatedAt       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -295,4 +311,15 @@ CREATE TABLE IF NOT EXISTS Consultation (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='학부모 상담일지 (사실/걱정/약속)';
 
 
-INSERT INTO POBY.Teacher (loginId, password, name, role, active, createdAt) VALUES ('test', '$2a$10$xpMmopTjlzbvrUdk.uN5fOFXZguKQZo5mA100U6iQScD4lmjny8RS', '테스트', 'ADMIN', 1, '2026-08-16 13:13:40');
+-- =====================================================================
+--  계정은 이 파일에서 만들지 않는다.
+-- ---------------------------------------------------------------------
+--  Teacher 행이 하나라도 있으면 TeacherService.noAccountYet() 이 false 가 되어
+--  최초 설정 화면(/setup)이 영구히 닫힌다. 그러면 서버에 올린 순간부터
+--  유일한 계정이 이 파일에 평문으로 박힌 아이디·해시가 되고,
+--  그 계정은 ADMIN 이라 파기 목록에서 퇴원생 실명까지 본다.
+--
+--  첫 계정은 /setup 이 만든다.
+--  로컬 개발용 계정이 필요하면 db/seed/local-teacher.sql 을 따로 돌린다.
+--  그 파일은 서버 배포 절차에서는 돌리지 않는다.
+-- =====================================================================

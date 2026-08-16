@@ -145,7 +145,9 @@ dl.detail dd { margin: 0; flex: 1; white-space: pre-wrap; }
 .linkbtn:hover { color: var(--danger); text-decoration: underline; }
 
 /* 상단 메뉴 */
-nav.nav { display: flex; gap: 4px; }
+/* 항목이 다섯 개(홈·학생·반·계정·파기)다. wrap 이 없으면 좁은 폰에서 마지막 항목이
+   우상단 등록 버튼과 겹쳐 눌리지 않는다 */
+nav.nav { display: flex; gap: 4px; flex-wrap: wrap; }
 nav.nav a {
     padding: 6px 12px; border-radius: 8px; text-decoration: none;
     color: var(--muted); font-size: 16px; font-weight: 600;
@@ -209,3 +211,1577 @@ ul.pick form:hover { background: var(--accent-weak); }
 .pickhint.ready { color: var(--accent); font-weight: 600; }
 .pickhint.warn { color: var(--warn); }
 .pickhint.none { color: var(--muted); }
+
+/* ===== 기록 공용 킷 (layout/record.html — 아래 기록 CSS 전부가 이것 위에 얹힌다) ===== */
+/* =====================================================================
+   기록 공용 킷 (templates/layout/record.html 전용)
+
+   진도 · 관찰 · 장면 · 개입 · 평가 · 상담 화면이 이 클래스들을 공유한다.
+   여기 있는 이름을 바꾸면 record.html 도 함께 고쳐야 한다.
+   색은 맨 위 :root 변수만 쓴다. 새 색을 늘리면 화면마다 파랑이 달라진다.
+   app.css 안에서 이 블록은 다른 기록 CSS(관찰·장면·평가·상담·리포트)보다 앞에 있어야 한다.
+   뒤로 옮기면 각 기능이 .rec-* 위에 얹은 규칙이 먼저 와서 카드 제목·여백이 어긋난다.
+   ===================================================================== */
+
+/* 섹션 제목 우측 추가 버튼.
+   h2.sec 가 flex 라서 margin-left:auto 만으로 오른쪽 끝에 붙는다 */
+.rec-add { margin-left: auto; white-space: nowrap; }
+
+/* ---------------------------------------------------------------------
+   기록 한 건 카드
+   --------------------------------------------------------------------- */
+.rec-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+}
+.rec-title { margin: 0; font-weight: 600; }
+.rec-meta { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+/* 입력한 줄바꿈을 살린다. 한 덩어리로 뭉치면 사실/걱정/약속을 나눠 적은 뜻이 사라진다 */
+.rec-body { margin: 8px 0 0; white-space: pre-wrap; }
+
+/* 작성자 줄. 카드 맨 아래에 옅게 */
+.rec-author {
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+    margin: 10px 0 0;
+    padding-top: 8px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 12px;
+}
+.rec-sep { color: var(--line); }
+
+/* 날짜 줄 */
+.rec-date { display: flex; gap: 10px; margin: 0 0 6px; align-items: baseline; }
+.rec-date-label { flex: none; min-width: 72px; color: var(--muted); font-size: 13px; }
+.rec-date-value { font-weight: 600; }
+
+/* ---------------------------------------------------------------------
+   기록이 하나도 없을 때.
+   점선 테두리로 "채워질 자리" 임을 보인다. 실선 카드로 두면 완성된 화면처럼 보인다.
+   --------------------------------------------------------------------- */
+.rec-empty {
+    background: var(--card);
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    padding: 32px 16px;
+    margin-bottom: 12px;
+    text-align: center;
+}
+.rec-empty-msg { margin: 0; color: var(--muted); }
+.rec-empty-hint {
+    margin: 8px auto 0;
+    max-width: 34em;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* ---------------------------------------------------------------------
+   1~5 칩 라디오. 폰에서 한 번 탭으로 고른다.
+   --------------------------------------------------------------------- */
+.scale {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin: 6px 0 2px;
+}
+
+/* 라디오를 display:none 으로 지우지 않는다.
+   지우면 Tab 으로 닿을 수 없고 스크린리더에도 안 읽힌다. 화면에서만 감춘다 */
+.scale input[type=radio] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* app.css 의 label 은 display:block + 위아래 여백이 있다. 칩에서는 그것을 되돌린다 */
+.scale label {
+    display: inline-flex;
+    margin: 0;
+    font-weight: 400;
+    cursor: pointer;
+}
+
+.scale label span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* 폰에서 손가락으로 정확히 눌리는 최소 크기 */
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--card);
+    color: var(--text);
+    font-size: 16px;
+    font-weight: 600;
+    user-select: none;
+}
+
+.scale input:checked + span {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
+/* 키보드로 옮겨 다닐 때 지금 어디인지 보여야 한다.
+   라디오를 감췄으므로 이 규칙이 없으면 초점이 완전히 사라진다 */
+.scale input:focus-visible + span {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* 미표시 = 확인하지 않았다. 1점과 다른 정보라 눈에 덜 띄게 두되 지우진 않는다.
+   점수 칩과 붙어 보이면 6단계 척도로 오해하므로 살짝 떼어 놓는다 */
+.scale-none { margin-left: 6px; }
+.scale-none span {
+    min-width: 56px;
+    border-style: dashed;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 400;
+}
+.scale-none input:checked + span {
+    background: var(--card);
+    border-color: var(--muted);
+    color: var(--muted);
+}
+
+/* 양 끝 설명. 5가 최상이라는 것을 글자로 알려 준다. 숫자만 두면 방향을 매번 헷갈린다 */
+.scale-end { color: var(--muted); font-size: 12px; }
+
+/* 좁은 폰. 설명을 지우지 않는다. 지우면 5가 위인지 아래인지 알 방법이 없어진다.
+   칩을 줄이고 설명은 줄바꿈으로 넘긴다 */
+@media (max-width: 380px) {
+    .scale label span { min-width: 40px; padding: 0 6px; }
+    .scale-none span { min-width: 48px; }
+}
+
+/* ===== 수업 회차 · 출결 · 진도 (session/**) ===== */
+/* =====================================================================
+   수업 회차 · 출결 · 진도  (templates/session/**)
+
+   이 앱에서 매일 열리는 유일한 화면이다. 폰에서 한 손으로 찍는 것이 기본이고,
+   PC 에서 키보드로 몰아 적는 경우가 실사용에 있다. 두 경우가 같은 마크업으로 돌아가야 한다.
+
+   색은 맨 위 :root 변수를 쓴다. 새로 둔 색은 결석 분홍(#db2777)과 보강 보라(#7c3aed) 둘뿐이고,
+   이유는 아래 출결 칩 규칙에 적었다.
+   이 블록의 위치는 자유다. .seg label · .hw-label 은 label { display: block } 보다 특이도가 높다.
+   ===================================================================== */
+
+/* 값의 범위를 이름에 넣는 꼬리표. "수업 메모"가 반 전체인지 개인인지 헷갈리면 아무도 안 적는다 */
+.tag {
+    font-size: 12px; font-weight: 600; color: var(--muted);
+    background: var(--bg); border: 1px solid var(--line);
+    border-radius: 999px; padding: 2px 8px;
+}
+
+/* 날짜 + 버튼 한 줄 */
+.inline { display: flex; gap: 8px; align-items: stretch; }
+.inline input { flex: 1; min-width: 0; }
+.inline .btn { flex: none; white-space: nowrap; }
+
+/* 교재 · 범위처럼 짧은 두 칸을 나란히 */
+.fieldrow { display: flex; gap: 10px; }
+.fieldrow > div { flex: 1; min-width: 0; }
+
+/* 검증 오류를 한 덩어리로 보여 줄 때. flash 안의 p 여백만 없앤다 */
+.errlist p { margin: 0; }
+
+/* 키보드 안내. 이 화면만의 규칙이라 화면 안에 적어 둔다 */
+.keyhint {
+    font-size: 13px; color: var(--muted); line-height: 1.6;
+    background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 12px; margin: 0 0 10px;
+}
+.keyhint b { color: var(--text); }
+
+/*
+   키보드 안내는 PC 전용이다. 폰에서는 감춘다.
+   회차 화면은 매일 여는 화면이고 주 사용 환경이 "수업 끝나고 폰" 인데,
+   Tab·방향키 설명이 360px 폭에서 8~9줄을 차지해 첫 학생 줄을 화면 밖으로 밀어낸다.
+   같은 파일의 JS 도 (hover: hover) and (pointer: fine) 로 PC 를 가려 초점을 옮긴다.
+*/
+@media (hover: none) and (pointer: coarse) {
+    .keyhint-pc { display: none; }
+}
+
+/* 섹션 제목 오른쪽 끝 버튼. h2.sec 가 flex 라서 auto 여백만으로 붙는다 */
+.s-fill { margin-left: auto; white-space: nowrap; }
+
+/* ---------------------------------------------------------------------
+   학생 한 줄: 이름 | 출결 · 지난 과제 | 학생 메모
+
+   폰에서는 위아래로 쌓고, 폭이 나면 이름을 왼쪽에 세워 한 줄로 읽히게 한다.
+   좁은 화면에서 억지로 3열을 유지하면 칩이 손가락보다 작아진다.
+   --------------------------------------------------------------------- */
+.srow {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+}
+.sname { display: flex; align-items: baseline; gap: 6px; }
+.smarks { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.smemo { margin: 0; }
+
+.hw { display: flex; align-items: center; gap: 8px; flex: 1 1 260px; }
+.hw-label { flex: none; color: var(--muted); font-size: 13px; }
+
+@media (min-width: 620px) {
+    .srow {
+        grid-template-columns: 116px minmax(0, 1fr);
+        grid-template-areas:
+            "name marks"
+            "name memo";
+        align-items: center;
+    }
+    .sname { grid-area: name; display: block; }
+    .smarks { grid-area: marks; }
+    .smemo { grid-area: memo; }
+}
+
+/* ---------------------------------------------------------------------
+   출결 · 지난 과제 칩
+
+   라디오를 지우지 않고 화면에서만 감춘다. 지우면 Tab · 방향키 · 스크린리더가 죽는다.
+   안 고른 상태 : 흰 바탕 + 해당 색 글자
+   고른 상태   : 해당 색 바탕 + 흰 글자
+   --------------------------------------------------------------------- */
+.seg { display: flex; gap: 4px; flex: 1 1 auto; min-width: 0; }
+.seg label { display: flex; flex: 1 1 auto; min-width: 0; margin: 0; font-weight: 400; }
+.seg input[type=radio] {
+    position: absolute;
+    width: 1px; height: 1px;
+    margin: 0; opacity: 0;
+    pointer-events: none;
+}
+.seg label span {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%;
+    /* 폰에서 손가락으로 정확히 눌리는 최소 높이 */
+    min-height: 44px;
+    padding: 0 6px;
+    border: 1px solid var(--line); border-radius: 8px;
+    background: var(--card);
+    font-size: 15px; font-weight: 700;
+    white-space: nowrap; cursor: pointer; user-select: none;
+}
+/* 라디오를 감췄으므로 이 규칙이 없으면 키보드로 옮겨 다닐 때 초점이 완전히 사라진다 */
+.seg input:focus-visible + span { outline: 2px solid var(--text); outline-offset: 2px; }
+
+/*
+ * 결석을 --danger(빨강)로 두지 않은 이유: 빨강은 이 앱에서 "지금 잘못됐다"는 경고색이다.
+ * 지난달 결석 기록이 화면을 경고로 물들이면 정작 오류 메시지가 안 보인다. 그래서 분홍을 새로 뒀다.
+ * 보강 보라도 마찬가지로 다른 어떤 상태와도 헷갈리지 않아야 해서 새로 뒀다.
+ */
+.seg.att input[value=PRESENT] + span { color: var(--accent); }
+.seg.att input[value=LATE]    + span { color: var(--warn); }
+.seg.att input[value=ABSENT]  + span { color: #db2777; }
+.seg.att input[value=MAKEUP]  + span { color: #7c3aed; }
+.seg.att input[value=PAUSED]  + span { color: var(--muted); }
+
+.seg.att input[value=PRESENT]:checked + span { background: var(--accent); border-color: var(--accent); color: #fff; }
+.seg.att input[value=LATE]:checked    + span { background: var(--warn);  border-color: var(--warn);  color: #fff; }
+.seg.att input[value=ABSENT]:checked  + span { background: #db2777; border-color: #db2777; color: #fff; }
+.seg.att input[value=MAKEUP]:checked  + span { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+.seg.att input[value=PAUSED]:checked  + span { background: var(--muted); border-color: var(--muted); color: #fff; }
+
+/* 지난 과제. 출결보다 덜 튀어야 한다. 출결이 이 화면의 주된 정보다 */
+.hwseg label span { font-size: 14px; font-weight: 600; min-height: 40px; }
+.hwseg input[value=DONE]    + span { color: var(--ok); }
+.hwseg input[value=PARTIAL] + span { color: var(--warn); }
+.hwseg input[value=NONE]    + span { color: var(--muted); }
+.hwseg input[value=DONE]:checked    + span { background: var(--ok);    border-color: var(--ok);    color: #fff; }
+.hwseg input[value=PARTIAL]:checked + span { background: var(--warn);  border-color: var(--warn);  color: #fff; }
+.hwseg input[value=NONE]:checked    + span { background: var(--muted); border-color: var(--muted); color: #fff; }
+
+/* ---------------------------------------------------------------------
+   저장 버튼. 학생이 열 명이면 화면을 다 내려야 저장에 닿는다. 그래서 아래에 붙여 둔다
+   --------------------------------------------------------------------- */
+.savebar {
+    position: sticky; bottom: 0; z-index: 5;
+    padding: 12px 0; margin-top: 4px;
+    background: linear-gradient(to top, var(--bg) 72%, transparent);
+}
+.savebar .btn { width: 100%; padding: 15px; font-size: 17px; }
+
+/* ---------------------------------------------------------------------
+   회차 목록
+   --------------------------------------------------------------------- */
+ul.sessions { list-style: none; margin: 0; padding: 0; }
+ul.sessions li { margin-bottom: 8px; }
+ul.sessions .row:hover { background: var(--accent-weak); }
+ul.sessions .rowmain { display: block; }
+.sdate { font-weight: 600; }
+/* 요약이 길어도 한 줄로 자른다. 수업 메모가 여러 줄이면 목록이 무너진다 */
+.snote {
+    display: inline-block; max-width: 100%; margin-left: 8px;
+    color: var(--muted); font-size: 14px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    vertical-align: bottom;
+}
+/* 출결을 한 명도 안 찍은 회차. 빠진 날을 목록에서 바로 찾을 수 있어야 한다 */
+.warnmark { color: var(--warn); font-weight: 600; }
+
+/* ===== 관찰기록 (observation/**) ===== */
+/* =====================================================================
+   관찰기록 (templates/observation/**)
+
+   위의 기록 공용 킷 위에 얹는다. 카드·칩·빈 상태는 그쪽 것을 쓰고
+   여기에는 관찰기록에만 있는 것 — 기준선 경고, before/after 비교, 점수 칩 — 만 둔다.
+   색은 맨 위 :root 변수를 쓴다. 옅은 배경 색만 app.css 의 .badge 가 쓰던 값과 맞춰 둔다.
+   이 블록은 위의 기록 공용 킷 뒤에 있어야 한다. 앞으로 옮기면 .obs-head .rec-title 이
+   킷 규칙에 덮여 카드 제목 줄이 어긋난다.
+   ===================================================================== */
+
+/* 제목 아래 학생 줄. 지금 누구의 기록을 보고 있는지가 늘 보여야 한다 */
+.obs-sub { margin: -8px 0 16px; font-size: 13px; }
+.obs-sub a { color: var(--muted); text-decoration: none; display: inline-flex; gap: 8px; align-items: baseline; }
+.obs-sub a:hover { color: var(--accent); }
+
+/* ---------------------------------------------------------------------
+   기준선이 없다는 경고.
+
+   화면에서 가장 눈에 띄어야 하는 한 덩어리다.
+   입회 시점 스냅샷은 시간이 지나면 복구할 방법이 없고, 그것이 없으면
+   리포트의 before 가 영영 비어 있다. 그래서 카드가 아니라 경고 색을 쓴다.
+   --------------------------------------------------------------------- */
+.obs-alert {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-left: 4px solid var(--warn);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+.obs-alert-title { margin: 0; font-weight: 700; color: #92400e; }
+.obs-alert-body { margin: 8px 0 14px; font-size: 14px; line-height: 1.6; color: var(--text); }
+/* 폰에서 한 손으로 누른다. 경고를 읽은 다음 손가락이 갈 곳은 이 버튼 하나뿐이어야 한다 */
+.obs-alert .btn { display: block; text-align: center; }
+
+/* ---------------------------------------------------------------------
+   before / after 비교. 리포트 본문의 초안이다
+   --------------------------------------------------------------------- */
+.obs-compare {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+}
+.obs-compare-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+}
+.obs-cmp-when { font-weight: 600; font-size: 14px; }
+.obs-cmp-tail { color: var(--muted); font-size: 12px; }
+
+.obs-cmp-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px;
+    padding: 6px 0;
+}
+.obs-cmp-label { flex: none; min-width: 86px; color: var(--muted); font-size: 13px; }
+.obs-cmp-val {
+    min-width: 2.4em;
+    text-align: center;
+    font-weight: 700;
+    font-size: 17px;
+}
+.obs-cmp-arrow { color: var(--line); }
+
+/* 변화의 방향. 5가 최상이므로 올라간 것이 좋아진 것이다.
+   숫자만 두면 매번 방향을 헷갈리므로 '좋아짐/낮아짐' 을 글자로 붙인다 */
+.obs-delta { font-size: 12px; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.obs-delta.up      { background: #ecfdf5; color: var(--ok); font-weight: 600; }
+.obs-delta.down    { background: #fef2f2; color: var(--danger); font-weight: 600; }
+.obs-delta.same    { background: #f3f4f6; color: var(--muted); }
+.obs-delta.unknown { background: #f3f4f6; color: var(--muted); }
+
+.obs-cmp-hint { margin: 10px 0 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+
+/* ---------------------------------------------------------------------
+   종류 칩. 기준선만 색으로 구분한다.
+   셋을 모두 물들이면 기준선이 눈에 안 띈다
+   --------------------------------------------------------------------- */
+.obs-kind {
+    flex: none;
+    font-size: 12px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+    background: #f3f4f6;
+    color: var(--muted);
+}
+.obs-kind.BASELINE { background: var(--accent-weak); color: var(--accent); font-weight: 600; }
+
+/* ---------------------------------------------------------------------
+   기록 카드 안쪽
+   --------------------------------------------------------------------- */
+.obs-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.obs-head .rec-title { margin: 0; }
+/* 수정은 오른쪽 끝에 조용히 둔다. 주 동작은 읽는 것이다 */
+.obs-edit { margin-left: auto; }
+
+.obs-scores { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 2px; }
+.obs-score {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 5px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+}
+.obs-score-label { color: var(--muted); font-size: 12px; }
+.obs-score-value { font-weight: 700; font-size: 15px; }
+/* 미표시는 0점이 아니다. 숫자와 같은 굵기로 두면 낮은 점수처럼 읽힌다 */
+.obs-score-value.none { font-weight: 400; font-size: 13px; color: var(--muted); }
+
+.obs-field { margin-top: 12px; }
+.obs-field-label { margin: 0 0 3px; font-size: 12px; font-weight: 600; color: var(--muted); }
+/* 입력한 줄바꿈을 살린다. 여러 줄로 나눠 적은 뜻이 한 덩어리로 뭉개지면 안 된다 */
+.obs-note { margin: 0; white-space: pre-wrap; line-height: 1.6; }
+
+/* 아이 말은 인용이다. 내가 쓴 문장과 같은 모양으로 두면 리포트 쓸 때 누구 말인지 헷갈린다 */
+.obs-quote {
+    margin: 0;
+    padding: 8px 12px;
+    border-left: 3px solid var(--accent);
+    background: var(--accent-weak);
+    border-radius: 0 8px 8px 0;
+    white-space: pre-wrap;
+    line-height: 1.6;
+}
+
+/* 기간만 있고 속이 빈 기록. 리포트에서 쓸 수 없으니 카드에서 바로 알린다 */
+.obs-thin { margin: 12px 0 0; font-size: 13px; color: var(--warn); }
+
+/* ---------------------------------------------------------------------
+   폼
+   --------------------------------------------------------------------- */
+
+/* 기준선을 처음 적는 사람에게 무엇을 적는 칸인지 먼저 알린다 */
+.obs-guide {
+    background: var(--accent-weak);
+    border: 1px solid #bfd3ff;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+}
+.obs-guide-title { margin: 0 0 8px; font-weight: 700; }
+.obs-guide ul { margin: 0; padding-left: 1.1em; }
+.obs-guide li { font-size: 14px; line-height: 1.6; margin-bottom: 4px; }
+
+.obs-guide-thin {
+    margin: -4px 0 16px;
+    font-size: 13px;
+    color: var(--warn);
+}
+.obs-guide-thin a { color: var(--accent); }
+
+/* 날짜 두 칸을 한 줄에. 폰에서 위아래로 늘어놓으면 기간 한 덩어리로 안 읽힌다 */
+.obs-period { display: flex; align-items: center; gap: 8px; }
+.obs-period input[type=date] { flex: 1; min-width: 0; }
+.obs-period-sep { flex: none; color: var(--muted); }
+
+/* 좁은 폰. date 입력 두 개가 한 줄에 안 들어가면 줄을 나누고 ~ 는 숨기지 않는다 */
+@media (max-width: 360px) {
+    .obs-period { flex-wrap: wrap; }
+    .obs-period input[type=date] { flex: 1 1 100%; }
+    .obs-period-sep { display: none; }
+    .obs-cmp-label { min-width: 100%; }
+}
+
+/* ===== 장면 · 개입 로그 (scene/**, intervention/**) ===== */
+/* =====================================================================
+   장면 · 개입 로그 (templates/scene/**, templates/intervention/**)
+
+   두 기능을 한 파일에 둔다. 같은 화면 구조(목록 + 등록 폼 한 장)를 쓰고
+   "행동을 적어라 / 근거를 적어라" 안내 상자를 공유한다.
+   색은 맨 위 :root 변수와 이미 쓰고 있는 색조만 쓴다.
+   호박색 3종(#fffbeb 바탕 · #fde68a 테두리 · #92400e 글자)은 app.css 의 .flash.err
+   빨강 3종(#fef2f2 · #fecaca · #991b1b)과 짝이 되는 값이다. 경고 상자에 var(--warn) 을
+   글자색으로 쓰면 옅은 바탕 위에서 대비가 모자라 14px 문장이 읽히지 않는다.
+   기록 카드 자체의 모양은 위의 기록 공용 킷 .rec-* 를 그대로 쓴다.
+
+   .rec-card 를 덮는 규칙은 반드시 두 클래스로 쓴다(.rec-card.iv-open).
+   한 클래스로 쓰면 app.css 로 합쳐질 때 파일 순서에 따라 테두리가 되돌려진다.
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   분기 안내. 장면은 분기 1개면 충분한 기록이라,
+   "이번 분기에 없다" 를 알려 주지 않으면 1년이 지나도 0개다.
+   --------------------------------------------------------------------- */
+.q-note {
+    margin: 0 0 14px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.55;
+}
+.q-note.miss { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+.q-note.ok { background: var(--card); color: var(--muted); }
+
+/* ---------------------------------------------------------------------
+   입력 규칙 안내. 폼 안에 둔다.
+   화면 밖(도움말 페이지)에 두면 아무도 읽지 않고, 성격만 적힌 기록이 쌓인다.
+   --------------------------------------------------------------------- */
+.q-rule {
+    margin: 14px 0 4px;
+    padding: 12px 14px;
+    background: var(--accent-weak);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.6;
+}
+/* 나쁜 예 / 좋은 예를 글자만으로 구분한다. 아이콘을 쓰면 폰에서 줄이 밀린다 */
+.q-bad {
+    color: var(--muted);
+    text-decoration: line-through;
+}
+.q-good {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+/* ---------------------------------------------------------------------
+   카드 제목 줄에 오른쪽 버튼을 둘 때.
+   .rec-title 은 display 를 지정하지 않으므로 이 클래스만 얹으면 된다.
+   --------------------------------------------------------------------- */
+.rec-titlerow {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.rec-editlink { margin-left: auto; white-space: nowrap; }
+
+/* ---------------------------------------------------------------------
+   개입: 결과 미확인 알림
+   --------------------------------------------------------------------- */
+.iv-nag {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 10px;
+}
+.iv-nag-msg {
+    flex: 1 1 220px;
+    margin: 0;
+    color: #92400e;
+    font-size: 14px;
+    line-height: 1.55;
+}
+.iv-nag .btn { white-space: nowrap; }
+
+/* ---------------------------------------------------------------------
+   개입 카드.
+   미확인은 왼쪽 띠로 표시한다. 30일을 넘기면 색을 올린다.
+   ONGOING(진행중)은 확인해 본 결과이므로 이 색을 쓰지 않는다 — 배지로만 구분된다.
+   --------------------------------------------------------------------- */
+.rec-card.iv-open { border-left: 4px solid var(--warn); }
+.rec-card.iv-stale { border-left: 4px solid var(--danger); background: #fef2f2; }
+
+/* 카드 안의 문제/시도/근거. app.css 의 dl.detail 을 그대로 쓴다.
+   덮는 규칙은 dl.detail 과 같거나 높은 무게가 필요하다.
+   .iv-fields dt 만 쓰면 dl.detail dt (요소 2개 + 클래스 1개) 에 져서 폭이 되돌려진다 */
+.iv-fields { margin-top: 8px; }
+dl.detail.iv-fields dt { width: 104px; }
+
+/* 작성자 줄과 결과 버튼을 한 줄에.
+   .rec-author 가 갖고 있던 윗선을 이 줄 전체로 옮긴다 */
+.iv-foot {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--line);
+}
+.iv-foot .rec-author {
+    flex: 1 1 auto;
+    margin: 0;
+    padding-top: 0;
+    border-top: 0;
+}
+.iv-foot .btn { white-space: nowrap; }
+
+/* ---------------------------------------------------------------------
+   결과 배지. app.css 의 .badge 색조를 그대로 쓴다.
+   미확인(NEED)과 진행중(ONGOING)은 다른 색이어야 한다. 같은 색이면
+   "확인 안 했다" 와 "확인했고 아직 진행중" 이 화면에서 구별되지 않는다.
+   --------------------------------------------------------------------- */
+.badge.WORKED { background: #ecfdf5; color: var(--ok); }
+.badge.PARTIAL { background: #fffbeb; color: var(--warn); }
+.badge.FAILED { background: #f3f4f6; color: var(--muted); }
+.badge.ONGOING { background: var(--accent-weak); color: var(--accent); }
+.badge.NEED { background: #fffbeb; color: var(--warn); font-weight: 600; }
+.badge.NEED.STALE { background: #fef2f2; color: var(--danger); }
+
+/* ---------------------------------------------------------------------
+   결과 칩 라디오 (WORKED / PARTIAL / FAILED / ONGOING).
+   select 로 두면 고를 때마다 두 번 탭이다. record-kit 의 .scale 과 같은 방식이다.
+   --------------------------------------------------------------------- */
+.rchips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 6px 0 2px;
+}
+
+/* 지우지 않고 감춘다. 지우면 Tab 으로 닿을 수 없고 스크린리더에도 안 읽힌다 */
+.rchips input[type=radio] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* app.css 의 label 은 display:block + 위아래 여백이 있다. 칩에서는 되돌린다 */
+.rchips label {
+    display: inline-flex;
+    margin: 0;
+    font-weight: 400;
+    cursor: pointer;
+}
+
+.rchips label span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* 폰에서 손가락으로 정확히 눌리는 최소 크기 */
+    min-width: 72px;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--card);
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 600;
+    user-select: none;
+}
+
+.rchips input:checked + span {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
+/* 라디오를 감췄으므로 이 규칙이 없으면 키보드 초점이 완전히 사라진다 */
+.rchips input:focus-visible + span {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+@media (max-width: 380px) {
+    .rchips label span { min-width: 64px; padding: 0 10px; }
+    /* 좁은 폰에서는 제목 칸과 값을 위아래로 쌓는다. 104px 를 유지하면 '해결하려 한 것' 이 두 줄로 접힌다.
+       gap 은 dl.detail div 가 12px 를 갖고 있어 같은 무게로 덮어야 한다 */
+    dl.detail.iv-fields div { flex-direction: column; gap: 2px; }
+    dl.detail.iv-fields dt { width: auto; }
+}
+
+/* ===== 평가 · 오답 유형 태그 (assessment/**) ===== */
+/* =====================================================================
+   이 블록은 위쪽 폼 규칙 뒤에 있어야 한다. 앞에 두면 .as-chips label 이
+
+   이 블록은 위쪽 label { display: block } 뒤에 있어야 한다. 앞에 두면 .as-chips label 이
+   app.css 의 label { display: block } 에 덮여 칩이 한 줄에 하나씩 떨어진다.
+   색은 맨 위 :root 변수만 쓴다. 새 색을 늘리면 화면마다 파랑이 달라진다.
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   선택 칩 (평가 종류 · 단원 상태)
+   select 로 두면 고를 때마다 두 번 탭이다. 항목이 서너 개뿐이라 칩이 맞다.
+   라디오는 지우지 않고 화면에서만 감춘다. 지우면 Tab·스크린리더가 닿지 못한다.
+   record-kit 의 .scale 과 같은 기법이지만 이쪽은 숫자가 아니라 글자라 폭이 자유롭다.
+   --------------------------------------------------------------------- */
+.as-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 2px; }
+
+.as-chips input[type=radio] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.as-chips label { display: inline-flex; margin: 0; font-weight: 400; cursor: pointer; }
+
+.as-chips label span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* 폰에서 손가락으로 정확히 눌리는 최소 크기 */
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--card);
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 600;
+    user-select: none;
+}
+
+.as-chips input:checked + span {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
+/* 라디오를 감췄으므로 이 규칙이 없으면 키보드 초점이 완전히 사라진다 */
+.as-chips input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* 미표시 = 고르지 않았다. 라디오는 해제가 안 되므로 되돌릴 자리를 둔다 */
+.as-chip-none span {
+    border-style: dashed;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 400;
+}
+.as-chips .as-chip-none input:checked + span {
+    background: var(--card);
+    border-color: var(--muted);
+    color: var(--muted);
+}
+
+/* ---------------------------------------------------------------------
+   득점 / 만점 한 줄
+   --------------------------------------------------------------------- */
+.as-scorerow { display: flex; align-items: center; gap: 8px; }
+/* app.css 의 input[type=number] 는 width:100% 다. 선택자 무게를 맞춰 눌러 준다 */
+.as-scorerow input[type=number] { flex: 1; min-width: 0; text-align: center; }
+.as-score-sep { flex: none; color: var(--muted); font-weight: 600; }
+.as-percent { margin-left: 6px; color: var(--accent); font-weight: 600; }
+
+/* ---------------------------------------------------------------------
+   오답 개수 스테퍼
+   폰에서 숫자판을 띄우지 않고 개수를 올린다. 손가락 하나로 여러 번 누르는 칸이다.
+   --------------------------------------------------------------------- */
+.as-tags { margin-top: 6px; }
+
+.as-tag-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    margin-bottom: 6px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--card);
+}
+
+/* 0인 유형은 저장하지 않는다. 무엇이 실제로 남는지 눈에 보여야 한다 */
+.as-tag-row.on { border-color: var(--accent); background: var(--accent-weak); }
+
+.as-tag-name { flex: 1; font-size: 15px; font-weight: 600; }
+
+.as-step-btn {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--card);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+}
+.as-step-btn:active { background: var(--accent-weak); border-color: var(--accent); }
+
+.as-tag-row input.as-step-num {
+    flex: none;
+    width: 60px;
+    padding: 11px 4px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------------
+   오답 유형 분포 막대
+   차트 라이브러리를 들이지 않는다. 가장 많은 유형을 100% 로 잡은 가로 막대면 충분하다.
+   --------------------------------------------------------------------- */
+.as-dist { display: grid; gap: 8px; }
+.as-bar { display: flex; align-items: center; gap: 10px; }
+.as-bar-name { flex: none; width: 52px; font-size: 14px; font-weight: 600; }
+.as-bar-track {
+    display: block;
+    flex: 1;
+    height: 14px;
+    background: var(--bg);
+    border-radius: 999px;
+    overflow: hidden;
+}
+/* 1건짜리 유형도 막대가 보여야 한다. 안 보이면 0건과 구별되지 않는다 */
+.as-bar-fill {
+    display: block;
+    height: 100%;
+    min-width: 4px;
+    background: var(--accent);
+    border-radius: 999px;
+}
+.as-bar-cnt {
+    flex: none;
+    min-width: 28px;
+    text-align: right;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------------
+   백지 4축 (읽기 전용). 점 다섯 개, 왼쪽이 1 이고 5가 최상이다.
+   --------------------------------------------------------------------- */
+.as-axes { display: grid; gap: 10px; }
+.as-axis { display: flex; align-items: center; gap: 10px; }
+.as-axis-name { flex: none; width: 44px; font-size: 14px; color: var(--muted); }
+.as-axis-dots { display: flex; flex: none; gap: 4px; }
+.as-dot {
+    display: block;
+    width: 14px;
+    height: 14px;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: var(--card);
+}
+.as-dot.on { background: var(--accent); border-color: var(--accent); }
+.as-axis-val { margin-left: auto; font-size: 13px; font-weight: 600; }
+/* 미표시는 0점이 아니다. 옅게 두어 점수와 섞이지 않게 한다 */
+.as-axis-val.none { color: var(--muted); font-weight: 400; }
+
+/* ---------------------------------------------------------------------
+   목록 카드. 카드 전체가 링크다. 폰에서 눌릴 자리를 찾지 않게 한다.
+   --------------------------------------------------------------------- */
+a.as-card { display: block; color: var(--text); text-decoration: none; }
+a.as-card:active { background: var(--accent-weak); }
+
+.as-type {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--accent-weak);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 600;
+}
+.as-status { margin-left: 4px; color: var(--muted); font-size: 12px; font-weight: 400; }
+
+/* 태그 칩 (보여 주기 전용) */
+.as-tags-view { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; }
+.as-tag {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    padding: 3px 9px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--bg);
+    color: var(--muted);
+    font-size: 13px;
+}
+.as-tag b { color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* 아이가 쓴 문장. 옮겨 적은 것이 아니라 인용이라는 것이 보여야 한다 */
+.as-quote {
+    margin: 0;
+    padding: 2px 0 2px 14px;
+    border-left: 3px solid var(--accent);
+    font-size: 17px;
+    white-space: pre-wrap;
+}
+
+/* 좁은 폰. 스테퍼 버튼은 줄이지 않는다(오타를 만드는 칸이다). 이름 칸만 양보한다 */
+@media (max-width: 380px) {
+    .as-tag-row { gap: 6px; padding: 6px; }
+    .as-tag-row input.as-step-num { width: 52px; }
+    .as-bar-name { width: 46px; font-size: 13px; }
+    .as-chips label span { padding: 0 10px; font-size: 14px; }
+}
+
+/* ===== 학부모 상담일지 (consultation/**) ===== */
+/* =====================================================================
+   학부모 상담일지 (templates/consultation/**)
+
+   기록 공용 킷의 .rec-* 를 그대로 쓰고, 여기에는 상담에만 있는 것만 둔다.
+   - 사실 / 걱정 / 약속 세 칸을 카드 안에서 눈으로 구분하는 것
+   - 최근 약속 모아보기
+   색은 맨 위 :root 변수만 쓴다. 새 색을 늘리면 화면마다 파랑이 달라진다.
+   이 블록은 위의 기록 공용 킷 뒤에 있어야 한다. 앞으로 옮기면 .cons-* 가 .rec-* 에 덮이고
+   .cons-pick label 이 label { display: block } 을 되돌리지 못해 경로 칩이 세로로 쌓인다.
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   입력 칸
+   --------------------------------------------------------------------- */
+
+/* 라벨 옆의 작은 설명. "사실" 만 있으면 무엇을 적는 칸인지 매번 헷갈린다.
+   hint 로 아래에 내리지 않고 라벨에 붙여 두는 이유는, 세 칸이 연달아 오기 때문에
+   칸과 설명이 한 줄 어긋나면 걱정 칸에 약속을 적게 된다 */
+.cons-tag { font-weight: 400; font-size: 12px; color: var(--muted); }
+
+/* 경로 칩 라디오. record-kit 의 .scale 과 같은 방식이다.
+   1~5 점수가 아니라 글자 라벨이라 폭만 다르게 둔다 */
+.cons-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0 2px; }
+
+/* 라디오를 display:none 으로 지우지 않는다. 지우면 Tab 으로 닿을 수 없고 스크린리더에도 안 읽힌다 */
+.cons-pick input[type=radio] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* app.css 의 label 은 display:block + 위아래 여백이 있다. 칩에서는 되돌린다 */
+.cons-pick label { display: inline-flex; margin: 0; font-weight: 400; cursor: pointer; }
+
+.cons-pick label span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* 폰에서 손가락으로 정확히 눌리는 최소 크기 */
+    min-height: 44px;
+    padding: 0 18px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--card);
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 600;
+    user-select: none;
+}
+
+.cons-pick input:checked + span {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
+/* 라디오를 감췄으므로 이 규칙이 없으면 키보드 초점이 완전히 사라진다 */
+.cons-pick input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* 적지 않는 것 안내. hint 로 두면 다른 안내에 섞여 안 읽힌다.
+   가정 사정·형제 비교·경제 상황은 한 번 적히면 지워도 백업에 남는다 */
+.cons-warn {
+    margin: 18px 0 0;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--warn);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+}
+.cons-warn b { color: var(--warn); }
+
+/* ---------------------------------------------------------------------
+   지난 상담 카드 안의 세 칸
+   한 덩어리로 뭉쳐 보이면 나눠 적은 뜻이 사라진다. 칸마다 라벨을 붙인다.
+   --------------------------------------------------------------------- */
+.cons-note { margin: 12px 0 0; }
+.cons-note-label {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+}
+/* 입력한 줄바꿈을 살린다 */
+.cons-note-body { margin: 2px 0 0; white-space: pre-wrap; }
+
+/* 약속만 눈에 띄게. 카드를 훑을 때 "내가 뭘 하기로 했나" 가 먼저 잡혀야 한다 */
+.cons-note.promise {
+    padding-left: 10px;
+    border-left: 3px solid var(--accent);
+}
+.cons-note.promise .cons-note-label { color: var(--accent); }
+
+/* 수정 버튼. 카드 오른쪽 아래에. quiet 은 hover 가 빨강이라 지우기용이므로 쓰지 않는다 */
+.cons-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
+
+/* ---------------------------------------------------------------------
+   최근 약속 모아보기 (통화 중에 먼저 확인하는 자리)
+   --------------------------------------------------------------------- */
+.cons-promises { border-left: 3px solid var(--accent); }
+.cons-promises-head {
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+}
+.cons-promises ul { list-style: none; margin: 0; padding: 0; }
+.cons-promises li {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+}
+.cons-promises li:last-child { border-bottom: 0; }
+.cons-promise-date { flex: none; color: var(--muted); font-size: 12px; }
+/* 약속 문장은 자르지 않는다. 줄여 보여 주면 정작 필요한 조건이 잘려 나간다 */
+.cons-promise-body { white-space: pre-wrap; }
+
+/* 수정 화면 아래의 원 작성자 줄. rec-author 가 카드 밖에 홀로 서므로 여백만 준다 */
+.cons-origin { margin-top: 22px; }
+.cons-origin .rec-author { border-top: 0; padding-top: 0; }
+
+/* 좁은 폰: 날짜와 약속 문장을 위아래로 쌓는다. 옆으로 붙이면 문장이 두 글자 폭이 된다 */
+@media (max-width: 380px) {
+    .cons-promises li { flex-direction: column; gap: 2px; }
+    .cons-pick label span { padding: 0 14px; }
+}
+
+/* ===== 퇴원생 리포트 초안 (report/draft.html) — @media print 는 전 화면 공통이 된다 ===== */
+/* =====================================================================
+   퇴원생 리포트 초안 (templates/report/draft.html 전용)
+
+   두 가지 매체를 동시에 만족해야 한다: 수업 끝나고 보는 폰, 그리고 A4 인쇄물.
+   그래서 화면용 장식은 최소로 두고, 인쇄에서 사라져야 하는 것(.rp-tools)과
+   반드시 남아야 하는 것(.rp-mode - 실명 문서인지 알려 주는 줄)을 구분한다.
+
+   색은 맨 위 :root 변수만 쓴다. 새 색을 늘리면 화면마다 파랑이 달라진다.
+   기록 카드 모양은 위의 기록 공용 킷 .rec-* 를 그대로 쓴다.
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   지금 어느 모드인가.
+   실수로 실명을 외부에 내보내는 것이 이 앱에서 가장 큰 사고다.
+   그래서 이 줄은 도구 모음 밖에 두고 인쇄물에도 남긴다.
+   --------------------------------------------------------------------- */
+.rp-mode {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+.rp-mode b { display: block; }
+.rp-mode-hint { color: var(--muted); font-size: 13px; }
+
+/* 실명이 보이는 모드는 경고색. "지금 이 화면에는 실명이 있다" 를 색으로 먼저 알린다 */
+.rp-mode.named { background: #fffbeb; border-color: #fde68a; }
+.rp-mode.named b { color: var(--warn); }
+
+/* 반출 모드는 안전한 상태다. 초록으로 두어 눈으로 구분된다 */
+.rp-mode.anon { background: #ecfdf5; border-color: #a7f3d0; }
+.rp-mode.anon b { color: var(--ok); }
+
+/* ---------------------------------------------------------------------
+   도구 모음 (기간 · 모드 · 복사 · 인쇄)
+   --------------------------------------------------------------------- */
+.rp-tools { margin-bottom: 18px; }
+.rp-filter { margin-top: 6px; }
+.rp-filter-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.rp-filter-row input[type=date] { flex: 1 1 130px; min-width: 130px; }
+.rp-filter-row .btn { white-space: nowrap; }
+.rp-tilde { color: var(--muted); }
+
+.rp-status { min-height: 19px; margin: 8px 0 0; font-size: 13px; color: var(--muted); }
+.rp-status.ok { color: var(--ok); font-weight: 600; }
+.rp-status.warn { color: var(--warn); font-weight: 600; }
+
+/* 복사용 평문 상자.
+   기본은 감춘다. display:none 이 아니라 크기를 0 으로 두는 이유:
+   클립보드가 막힌 브라우저에서 select() 로 직접 복사시키려면 상자가 살아 있어야 한다 */
+.rp-text {
+    display: block;
+    width: 100%;
+    height: 0;
+    padding: 0;
+    border: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+.rp-text.on {
+    height: 220px;
+    margin-top: 10px;
+    padding: 11px 12px;
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    opacity: 1;
+    pointer-events: auto;
+    font-family: ui-monospace, monospace;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* ---------------------------------------------------------------------
+   본문 공통
+   --------------------------------------------------------------------- */
+.rp-note {
+    margin: 10px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+}
+.rp-sub {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 18px 0 8px;
+    font-size: 15px;
+    font-weight: 600;
+}
+/* app.css 의 .cnt 는 h2.sec 안에서만 잡힌다. 소제목에서도 같은 모양이어야 한다 */
+.rp-sub .cnt {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-weak);
+    border-radius: 999px;
+    padding: 2px 9px;
+}
+.rp-empty-line { margin: 0; color: var(--muted); font-size: 14px; }
+.rp-count-line { margin: 0 0 10px; color: var(--muted); font-size: 14px; }
+.rp-top { margin: 0 0 10px; font-size: 14px; }
+
+/* 인용. 아이 말과 학부모 말은 다듬지 않고 그대로 낸다.
+   따옴표와 색으로 "이건 내 문장이 아니다" 를 보인다 */
+.rp-quote {
+    margin: 10px 0 0;
+    padding-left: 10px;
+    border-left: 3px solid var(--accent-weak);
+    color: var(--text);
+    font-style: normal;
+    white-space: pre-wrap;
+}
+
+/* 경고. 기준선이 없어 변화를 증명할 수 없다는 것이 이 리포트에서 가장 중요한 경고다.
+   접거나 옅게 두지 않는다 */
+.rp-warn {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+}
+.rp-warn-msg { margin: 0; color: #991b1b; font-weight: 600; }
+.rp-warn-hint { margin: 6px 0 0; color: #991b1b; font-size: 13px; line-height: 1.5; }
+/* 숫자에 붙는 짧은 주의. 카드 안에서 쓴다 */
+.rp-warn.thin {
+    background: #fffbeb;
+    border-color: #fde68a;
+    padding: 10px 12px;
+    margin: 12px 0 0;
+    color: #92400e;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* ---------------------------------------------------------------------
+   1. 함께한 시간
+   --------------------------------------------------------------------- */
+.rp-rate { display: flex; align-items: baseline; gap: 8px; margin: 0; }
+.rp-rate b { font-size: 30px; line-height: 1.1; color: var(--accent); }
+.rp-rate span { color: var(--muted); font-size: 14px; }
+/* 셀 수 없을 때는 큰 숫자를 쓰지 않는다. 0% 로 오해할 자리를 만들지 않는다 */
+.rp-rate.none b { font-size: 18px; color: var(--muted); }
+
+.rp-stat {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 14px 0 0;
+    padding: 0;
+}
+.rp-stat li {
+    flex: 1 1 84px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    text-align: center;
+}
+.rp-stat-label { display: block; color: var(--muted); font-size: 12px; }
+.rp-stat-value { display: block; font-weight: 600; }
+
+/* ---------------------------------------------------------------------
+   분포 막대 (과제 수행 · 오답 유형)
+   그림 라이브러리를 쓰지 않는다. 막대 두 줄이면 읽는 사람은 충분히 안다
+   --------------------------------------------------------------------- */
+.rp-dist { list-style: none; margin: 0; padding: 0; }
+.rp-dist li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+}
+.rp-dist-label { flex: none; width: 68px; font-size: 14px; }
+.rp-dist-value { flex: none; color: var(--muted); font-size: 13px; white-space: nowrap; }
+.rp-bar {
+    flex: 1;
+    height: 12px;
+    border-radius: 999px;
+    background: var(--accent-weak);
+    overflow: hidden;
+}
+.rp-bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--accent);
+}
+/* 가장 많은 두 유형. 처방은 여기서 나온다 */
+.rp-dist li.top .rp-dist-label { font-weight: 700; }
+.rp-dist li.top .rp-dist-value { color: var(--text); font-weight: 600; }
+
+/* ---------------------------------------------------------------------
+   3. 무엇이 달라졌나
+   --------------------------------------------------------------------- */
+.rp-delta {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+}
+.rp-delta:last-of-type { border-bottom: 0; }
+.rp-delta-label { flex: none; min-width: 88px; color: var(--muted); font-size: 14px; }
+.rp-delta-value { font-size: 17px; font-weight: 600; }
+.rp-delta-value.up { color: var(--ok); }
+.rp-delta-value.down { color: var(--danger); }
+/* 비교 불가와 변화 없음은 둘 다 색을 주지 않는다. 색을 주면 좋음/나쁨으로 읽힌다 */
+.rp-delta-value.flat { color: var(--muted); font-size: 15px; font-weight: 400; }
+
+.rp-point .rec-title { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.rp-point-date { color: var(--muted); font-size: 13px; font-weight: 400; }
+.rp-point-caution { margin: 6px 0 0; color: var(--warn); font-size: 13px; line-height: 1.5; }
+.rp-point dl.detail { margin-top: 10px; }
+.rp-point dl.detail dt { width: 80px; }
+
+/* 점수 몇 칸 (관찰 점수 · 백지 4축) */
+.rp-axes {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 10px 0 0;
+    padding: 0;
+}
+.rp-axes li {
+    flex: 1 1 68px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 6px 8px;
+    text-align: center;
+}
+.rp-axes li span { display: block; color: var(--muted); font-size: 12px; }
+.rp-axes li b { font-size: 17px; }
+
+/* ---------------------------------------------------------------------
+   4. 통한 것 / 안 통한 것
+   --------------------------------------------------------------------- */
+.rp-group { margin-bottom: 16px; }
+.rp-group-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 14px 0 2px;
+    font-size: 15px;
+    font-weight: 700;
+}
+.rp-group-label .cnt {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-weak);
+    border-radius: 999px;
+    padding: 2px 9px;
+}
+.rp-group-mean { margin: 0 0 8px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+
+/* 근거. "어떻게 알았나" 가 없으면 리포트에 쓸 수 없다는 것을 눈에 보이게 남긴다 */
+.rp-evidence {
+    margin: 8px 0 0;
+    padding-top: 8px;
+    border-top: 1px dashed var(--line);
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+.rp-evidence b { color: var(--muted); font-size: 12px; font-weight: 600; }
+.rp-evidence.missing { color: var(--warn); font-size: 13px; }
+
+/* ---------------------------------------------------------------------
+   인쇄. A4 로 넘긴다.
+
+   상단바와 도구 모음은 종이에서 아무 일도 하지 않으므로 감춘다.
+   .rp-mode 는 남긴다. 종이만 보고 실명이 든 문서인지 알 수 있어야 한다.
+   --------------------------------------------------------------------- */
+@media print {
+    @page {
+        size: A4;
+        margin: 14mm;
+    }
+
+    header.top,
+    .accountbar,
+    .flash,
+    .rp-tools,
+    .rp-status,
+    .rp-text,
+    .btn {
+        display: none !important;
+    }
+
+    body {
+        padding: 0;
+        background: #fff;
+        font-size: 11pt;
+    }
+    .wrap { max-width: none; padding: 0; }
+
+    /* 카드 테두리는 남기되 배경은 지운다. 잉크를 아끼는 것이 아니라
+       회색 배경이 종이에서 글자를 읽기 어렵게 만든다 */
+    .card, .rec-card, .rp-mode, .rp-warn, .rec-empty {
+        background: #fff;
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+    .rp-bar { background: #eee; }
+    .rp-bar-fill { background: #666; }
+
+    /* 제목만 페이지 끝에 남는 것을 막는다 */
+    h2.sec, .rp-sub, .rp-group-label {
+        break-after: avoid;
+        page-break-after: avoid;
+    }
+
+    /* 인쇄에서는 링크 밑줄이 방해만 된다 */
+    a { text-decoration: none; color: inherit; }
+}
+
+/* ===== 홈 대시보드 (home/dashboard.html) ===== */
+/* =====================================================================
+   홈 대시보드 (templates/home/dashboard.html 전용)
+
+   줄과 카드는 app.css 의 것을 그대로 쓴다(.card .row .rowmain .students .badge .btn .hint).
+   여기 있는 것은 대시보드에만 있는 상태 표시뿐이다:
+     - 0건이 "좋은 소식"으로 보이게 하는 .dash-clear
+     - 지금 가장 급한 줄을 눈에 띄게 하는 .dash-hot / .badge.hot
+   색은 맨 위 :root 변수만 쓴다. 새 색을 늘리면 화면마다 빨강이 달라진다.
+   이 블록은 app.css 어디에 있어도 되지만, 홈에만 쓰이는 규칙이라 뒤쪽에 모아 둔다.
+   ===================================================================== */
+
+/* h1 옆의 날짜. 제목보다 옅게 두어 "오늘 할 일"이 먼저 읽히게 한다 */
+.dash-today {
+    margin-left: 6px;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 400;
+    white-space: nowrap;
+}
+
+/* 맨 위 한 줄 요약. 이 줄만 읽고 화면을 닫아도 손해가 없어야 한다 */
+.dash-summary {
+    background: var(--accent-weak);
+    border: 1px solid #bfd3ff;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 0 0 4px;
+    font-size: 15px;
+}
+.dash-summary b { color: var(--accent); font-size: 17px; }
+
+/* 밀린 것이 없을 때. 같은 자리에 회색 빈칸을 두면 "아무 일도 없는 화면"으로 읽힌다.
+   좋은 소식은 좋은 소식처럼 보여야 다음에도 이 화면을 연다 */
+.dash-summary.clear {
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+    color: #065f46;
+}
+.dash-summary.clear b { color: var(--ok); }
+
+/* 카드 하나가 0건일 때. 점선 빈칸(record-kit 의 .rec-empty)과 반대 뜻이라 모양도 달라야 한다.
+   .rec-empty 는 "채워야 할 자리", 이것은 "채워져 있음" 이다 */
+.dash-clear {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    background: var(--card);
+    border: 1px solid #a7f3d0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 0 0 12px;
+    color: var(--ok);
+    font-size: 14px;
+}
+.dash-clear::before { content: "✓"; font-weight: 700; }
+
+/* 오늘 수업이 없는 날처럼, 좋은 소식도 나쁜 소식도 아닌 안내 */
+.dash-none p { margin: 0; color: var(--muted); }
+.dash-none p.hint { margin-top: 6px; }
+
+/* 섹션 제목 오른쪽의 더 보기 / 접기.
+   h2.sec 가 flex 라서 margin-left:auto 만으로 오른쪽 끝에 붙는다 */
+.dash-more {
+    margin-left: auto;
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+}
+.dash-more:hover { text-decoration: underline; }
+
+/* 지금 가장 급한 줄. 테두리만 바꾼다.
+   배경까지 칠하면 목록에서 눌리는 영역이 어디까지인지 흐려진다 */
+.row.dash-hot { border-color: #fecaca; }
+
+/* 며칠 밀렸는지 알려 주는 뱃지. app.css 의 .badge 크기를 그대로 물려받는다 */
+.badge.due { background: #fffbeb; color: var(--warn); }
+.badge.hot { background: #fef2f2; color: var(--danger); font-weight: 600; }
+
+/* 이름 옆에 뱃지가 붙는 줄. 기준선 뱃지가 이름에 붙어 보이지 않게 띈다 */
+.row .rowmain .badge { margin-left: 6px; }
+
+/* 숫자 한 줄로 끝나는 카드(이번 분기 장면)의 본문 */
+.dash-lead { margin: 0; }
+.dash-lead b { color: var(--danger); font-size: 18px; }
+
+/* 카드 안의 전체 폭 버튼. .btn.wide 는 flex 부모에서만 늘어나므로 여기서는 쓰지 못한다 */
+.dash-cta {
+    display: block;
+    margin-top: 14px;
+    text-align: center;
+}
+
+/* 폰 좁은 폭. 제목과 날짜가 두 줄로 갈라져도 날짜를 지우지 않는다.
+   무슨 날 기준인지 모르면 "3일 전" 같은 숫자를 해석할 수 없다 */
+@media (max-width: 380px) {
+    .dash-today { display: block; margin-left: 0; }
+}
+
+/* ===== 운영 화면 · 페이지 이동 (student/leave.html, admin/purge/**, 목록 .pager) ===== */
+/* ---------------------------------------------------------------------
+   운영 화면(퇴원·휴원·보관 만료 파기)과 목록 페이지 이동.
+
+   색은 맨 위 :root 변수만 쓴다. 새 색을 늘리면 화면마다 빨강이 조금씩 달라진다.
+   --------------------------------------------------------------------- */
+
+/* 되돌리기 어려운 조작 버튼. primary 자리에 놓아 크기는 같고 색만 다르다.
+   quiet(회색)로 두면 "눌러도 되는 버튼"으로 보인다 */
+.btn.danger {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: #fff;
+    font-weight: 600;
+}
+.btn.danger:hover { color: #fff; }
+/* 비활성 상태에서 hover 로 색이 진해지면 눌릴 것처럼 보인다 */
+.btn.danger:disabled:hover { background: var(--danger); }
+
+/* 확인 화면의 경고 상자. card 위에 덧입힌다 */
+.card.ops-warn {
+    border-color: #fecaca;
+    background: #fffafa;
+}
+.ops-warn-title {
+    margin: 0 0 8px;
+    font-weight: 700;
+    color: var(--danger);
+}
+
+/* 무엇이 일어나는가 / 지워지는가 / 남는가 목록 */
+ul.ops-list {
+    margin: 0;
+    padding-left: 20px;
+}
+ul.ops-list li { margin-bottom: 6px; }
+ul.ops-list li:last-child { margin-bottom: 0; }
+/* 지워지는 것과 남는 것을 글머리 색으로 구분한다. 글자만으로는 훑을 때 섞인다 */
+ul.ops-gone li::marker { color: var(--danger); }
+ul.ops-keep li::marker { color: var(--ok); }
+
+/* 확인 입력이 맞았을 때의 안내 */
+.ops-ok {
+    color: var(--ok);
+    font-weight: 600;
+}
+
+/* 상세 화면의 상태 조작 줄. actions 와 달리 버튼이 가로로 꽉 차지 않는다.
+   퇴원·휴원은 자주 누르는 버튼이 아니므로 '수정' 옆에서 눈에 덜 띄어야 한다 */
+.ops-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+.ops-actions form { margin: 0; }
+
+/* 마지막 수정자. 상세 화면 아래에 작게 붙는다 */
+.ops-updated {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 8px 0 0;
+}
+
+/* 목록 페이지 이동. 이전 / 현재 / 다음 뿐이다 */
+.pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 16px 0 0;
+}
+.pager-now {
+    font-size: 14px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ===== 학생 상세 기록 요약 (student/detail.html) ===== */
+/* 여섯 종류의 기록으로 들어가는 줄. 행 모양은 ul.students 를 그대로 쓰고
+   오른쪽 건수 칩만 여기서 더한다.
+
+   0 을 '—' 로 바꾸지 않는다. 0 은 모르는 값이 아니라 "한 번도 안 적었다" 는 정보고,
+   그것이 눈에 보여야 적는다. 그래서 0 만 색이 다르다. */
+ul.students.rec-nav li { margin-bottom: 6px; }
+.rn-cnt {
+    display: inline-block; min-width: 34px; text-align: center;
+    font-size: 14px; font-weight: 700; padding: 3px 10px; border-radius: 999px;
+    background: var(--accent-weak); color: var(--accent);
+}
+/* 한 건도 없는 줄. 회색으로 두면 "없어도 되는 것" 처럼 보인다 */
+.rn-cnt.zero { background: #fffbeb; color: var(--warn); }

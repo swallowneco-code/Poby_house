@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(~{::title}, ~{::main}, ~{::script})}">
+<head>
+    <title th:text="${student.name} + ' - 퇴원 처리'">퇴원 처리</title>
+</head>
+<body>
+<main>
+
+    <h1>
+        <span th:text="${student.name}">김민준</span> 퇴원 처리
+    </h1>
+
+    <!--
+      확인 화면의 목적은 "무엇이 함께 일어나는가" 를 먼저 보여 주는 것이다.
+      예전에는 수정 폼의 드롭다운 하나로 이 세 가지가 조용히 일어났다.
+    -->
+    <div class="card ops-warn">
+        <p class="ops-warn-title">이 버튼을 누르면 함께 일어나는 일</p>
+        <ul class="ops-list">
+            <li>상태가 <b>퇴원</b>으로 바뀝니다.</li>
+            <li>보관 만료일이 <b>퇴원일 + 3년</b>인
+                <b id="purgeAfter" th:text="${form.purgeAfterPreview} ?: '—'">2029-08-18</b>
+                으로 세워집니다. 그날 이후에는 원장 화면의 파기 목록에 올라옵니다.</li>
+            <li th:if="${currentEnrollment != null}">
+                현재 반 <b th:text="${currentEnrollment.classGroup.name}">화목 A반</b>에서도
+                <b>함께 빠집니다</b>. 배정 종료일이 퇴원일로 찍힙니다.
+            </li>
+            <li th:if="${currentEnrollment == null}">
+                지금 소속된 반이 없어 반 배정은 그대로입니다.
+            </li>
+        </ul>
+        <p class="hint">
+            지난 기록(출결·진도·관찰·장면·평가·상담)은 <b>하나도 지워지지 않습니다</b>.
+            퇴원생 리포트는 이 기록으로 씁니다.
+        </p>
+    </div>
+
+    <form method="post" th:action="@{/students/{id}/leave(id=${student.id})}" th:object="${form}">
+
+        <div class="card">
+            <label for="leftOn">퇴원일 <span class="req">*</span></label>
+            <input type="date" id="leftOn" th:field="*{leftOn}" required>
+            <p class="error" th:if="${#fields.hasErrors('leftOn')}" th:errors="*{leftOn}"></p>
+            <p class="hint">마지막 수업일을 넣습니다. 반 배정 종료일도 이 날짜로 찍힙니다.</p>
+
+            <label for="leaveReason">퇴원 사유</label>
+            <input type="text" id="leaveReason" th:field="*{leaveReason}" placeholder="이사, 학원 변경 등">
+            <p class="error" th:if="${#fields.hasErrors('leaveReason')}" th:errors="*{leaveReason}"></p>
+            <p class="hint">
+                가정 사정이나 경제 상황은 적지 않습니다. 리포트에 쓸 수 없는 정보입니다.
+            </p>
+        </div>
+
+        <p class="hint">
+            잘못 눌렀으면 상세 화면의 <b>재원 복귀</b>로 되돌릴 수 있습니다.
+            그때 퇴원일·사유·보관 만료일은 지워지지만, <b>반 배정은 다시 넣어 주어야 합니다.</b>
+        </p>
+
+        <div class="actions">
+            <a class="btn wide" th:href="@{/students/{id}(id=${student.id})}">취소</a>
+            <button class="btn danger wide" type="submit">퇴원 처리</button>
+        </div>
+
+    </form>
+
+</main>
+
+<script>
+    // 퇴원일을 바꾸면 보관 만료일 안내도 따라 바뀌어야 한다.
+    // 고정 값으로 두면 날짜를 고친 사람에게 거짓 날짜를 보여 준다.
+    (function () {
+        var input = document.getElementById('leftOn');
+        var out = document.getElementById('purgeAfter');
+        if (!input || !out) return;
+
+        function sync() {
+            var v = input.value;                 // yyyy-MM-dd
+            if (!v || v.length < 10) { out.textContent = '—'; return; }
+            var y = parseInt(v.substring(0, 4), 10);
+            var m = v.substring(5, 7);
+            var d = v.substring(8, 10);
+            // 2월 29일의 3년 뒤는 윤년이 아니다. 서버(LocalDate.plusYears)는 28일로 당긴다.
+            // 화면이 29일을 보여 주면 저장된 날짜와 하루 어긋난다.
+            if (m === '02' && d === '29') d = '28';
+            out.textContent = (y + 3) + '-' + m + '-' + d;
+        }
+
+        input.addEventListener('change', sync);
+        input.addEventListener('input', sync);
+        sync();
+    })();
+</script>
+</body>
+</html>

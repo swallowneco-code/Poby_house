@@ -8,13 +8,23 @@
 <main>
 
     <div class="toolbar">
-        <!-- 검색해도 고른 상태가 풀리지 않게 함께 보낸다 -->
+        <!-- 검색해도 고른 상태가 풀리지 않게 함께 보낸다. page 는 일부러 안 보낸다(검색하면 1쪽부터) -->
         <form method="get" th:action="@{/students}">
             <input type="hidden" name="status" th:if="${status != null}" th:value="${status.name()}">
-            <input type="search" name="keyword" placeholder="이름·식별번호·학교로 검색" th:value="${keyword}">
+            <!--
+              autocomplete="off" 를 반드시 둔다.
+              검색이 GET 이라 실명이 주소에 실리는데, 폼 기록까지 남으면 공용 PC 나
+              남이 잡은 강사 폰의 주소창·입력칸 자동완성에 찾아본 학생 이름이 그대로 뜬다.
+              식별번호(S2026001)로도 검색되므로 실명을 안 넣고 찾는 길이 이미 있다.
+            -->
+            <input type="search" name="keyword" placeholder="식별번호(S2026001)·이름·학교로 검색"
+                   autocomplete="off" th:value="${keyword}">
             <button class="btn" type="submit">검색</button>
         </form>
     </div>
+    <p class="hint">
+        <b>식별번호</b>로도 찾을 수 있습니다. 검색어는 주소에 남으니, 공용 PC 에서는 식별번호를 쓰세요.
+    </p>
 
     <div class="toolbar">
         <!-- 상태를 바꿔도 검색어는 유지한다 -->
@@ -59,9 +69,28 @@
         </li>
     </ul>
 
-    <p class="soon" th:if="${not #lists.isEmpty(students)}">
-        총 <b th:text="${#lists.size(students)}">0</b>명
+    <!--
+      총원은 화면에 올라온 목록 크기가 아니라 count 결과다.
+      #lists.size 로 세면 2쪽에서 "총 3명" 같은 거짓말이 나온다.
+    -->
+    <p class="soon" th:if="${pageInfo.totalElements > 0}">
+        총 <b th:text="${pageInfo.totalElements}">0</b>명
+        <span th:if="${pageInfo.totalPages > 1}"
+              th:text="'· ' + ${pageInfo.number + 1} + '/' + ${pageInfo.totalPages} + '쪽'">· 1/3쪽</span>
     </p>
+
+    <!--
+      페이지 이동은 이전 / 현재 / 다음 세 개뿐이다.
+      번호를 다 늘어놓으면 폰에서 줄이 넘치고, 15쪽으로 바로 뛰는 일은 실제로 없다.
+      status·keyword 를 다시 실어야 2쪽에서 필터가 풀리지 않는다.
+    -->
+    <nav class="pager" th:if="${pageInfo.totalPages > 1}">
+        <a class="btn small" th:if="${pageInfo.hasPrevious()}"
+           th:href="@{/students(status=${status?.name()},keyword=${keyword},page=${pageInfo.number - 1})}">이전</a>
+        <span class="pager-now" th:text="${pageInfo.number + 1} + ' / ' + ${pageInfo.totalPages}">1 / 3</span>
+        <a class="btn small" th:if="${pageInfo.hasNext()}"
+           th:href="@{/students(status=${status?.name()},keyword=${keyword},page=${pageInfo.number + 1})}">다음</a>
+    </nav>
 
 </main>
 </body>
