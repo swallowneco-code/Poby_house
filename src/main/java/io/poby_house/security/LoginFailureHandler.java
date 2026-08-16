@@ -34,8 +34,10 @@ public class LoginFailureHandler extends SimpleUrlAuthenticationFailureHandler {
                                         AuthenticationException exception) throws IOException, ServletException {
         // setDefaultFailureUrl 을 쓰면 싱글턴의 필드를 매 요청마다 바꾸게 된다.
         // 두 사람이 동시에 로그인에 실패하면 서로의 메시지를 덮어쓴다.
-        String url = request.getContextPath() + "/login?error=" + reasonCode(exception);
-        getRedirectStrategy().sendRedirect(request, response, url);
+        //
+        // 컨텍스트 경로는 붙이지 않는다. DefaultRedirectStrategy 가 이미 붙여 준다.
+        // 여기서 또 붙이면 /poby 아래에 배포했을 때 /poby/poby/login 이 된다.
+        getRedirectStrategy().sendRedirect(request, response, "/login?error=" + reasonCode(exception));
     }
 
     private String reasonCode(AuthenticationException exception) {

@@ -41,17 +41,28 @@ public class GlobalExceptionHandler {
     /**
      * Referer 를 그대로 리다이렉트에 쓰면 오픈 리다이렉트가 된다.
      * 호스트를 버리고 경로만 쓴다.
+     *
+     * 컨텍스트 경로도 떼어 낸다. "redirect:" 로 나가는 주소는 컨텍스트 기준이라
+     * /poby 아래에 배포했을 때 그대로 두면 /poby/poby/classes/1 이 된다.
      */
     private String safeReferer(HttpServletRequest request) {
         String referer = request.getHeader("Referer");
         if (referer == null) {
             return FALLBACK;
         }
+        String path;
         try {
-            String path = URI.create(referer).getPath();
-            return (path == null || path.isBlank()) ? FALLBACK : path;
+            path = URI.create(referer).getPath();
         } catch (IllegalArgumentException e) {
             return FALLBACK;
         }
+        if (path == null || path.isBlank()) {
+            return FALLBACK;
+        }
+        String contextPath = request.getContextPath();
+        if (!contextPath.isEmpty() && path.startsWith(contextPath)) {
+            path = path.substring(contextPath.length());
+        }
+        return path.isBlank() ? FALLBACK : path;
     }
 }

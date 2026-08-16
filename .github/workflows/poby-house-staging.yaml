@@ -1,0 +1,70 @@
+name: poby-house-staging
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'corretto'
+          java-version: '17'
+
+      - name: gradle 권한 부여 및 빌드
+        run: |
+          chmod +x ./gradlew
+          ./gradlew clean build -x test
+
+      - name: Buildx 셋업
+        uses: docker/setup-buildx-action@v3
+
+      - name: 도커 허브 로그인
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: 도커 빌드 & 푸쉬
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: peachcoolpis/poby-house-staging:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: ssh 접속
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USERNAME }}
+          password: ${{ secrets.STAGING_PASSWORD }}
+          script_stop: true
+          port: 2222
+          script: |
+            docker stop poby-house-staging || true
+            docker rm poby-house-staging || true
+            docker pull peachcoolpis/poby-house-staging:latest
+            docker run -d --name poby-house-staging \
+             --restart always \
+             --network bae-staging_default \
+            -e SPRING_PROFILES_ACTIVE=staging \
+            -e CONTEXT_PATH=/poby \
+            -e DB_URL=${{ secrets.DB_URL }} \
+            -e DB_PORT=${{ secrets.DB_PORT }} \
+            -e DB_USERNAME=${{ secrets.DB_USERNAME }} \
+            -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+            -e REMEMBER_ME_KEY=${{ secrets.REMEMBER_ME_KEY }} \
+            -v $(pwd)/logs:/app/logs \
+            -p 127.0.0.1:8081:8080 \
+            peachcoolpis/poby-house-staging:latest
+            docker image prune -f
