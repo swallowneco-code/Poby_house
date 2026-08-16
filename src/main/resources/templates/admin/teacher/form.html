@@ -71,6 +71,11 @@
 
     </form>
 
+    <div class="card" th:if="${editing}">
+        <a class="btn" th:href="@{/admin/teachers/{id}/password(id=${teacher.id})}">비밀번호 초기화</a>
+        <p class="hint">본인이 비밀번호를 잊었을 때 원장이 임시 비밀번호를 정해 줍니다.</p>
+    </div>
+
 </main>
 </body>
 </html>

@@ -109,6 +109,15 @@ public class TeacherService {
         get(teacherId).setPassword(passwordEncoder.encode(newRawPassword));
     }
 
+    /**
+     * 원장이 남의 비밀번호를 새로 정해 준다.
+     * 현재 비밀번호를 확인하지 않는다는 점만 changePassword 와 다르다.
+     */
+    @Transactional
+    public void resetPassword(Long teacherId, String newRawPassword) {
+        changePassword(teacherId, newRawPassword);
+    }
+
     /** 이름만 바꾼다. 아이디는 바꾸지 않고, 비밀번호는 별도 화면에서 다룬다 */
     @Transactional
     public void rename(Long teacherId, String name) {

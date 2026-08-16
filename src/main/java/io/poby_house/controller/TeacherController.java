@@ -2,6 +2,7 @@ package io.poby_house.controller;
 
 import io.poby_house.domain.Teacher;
 import io.poby_house.domain.TeacherRole;
+import io.poby_house.dto.PasswordResetForm;
 import io.poby_house.dto.TeacherEditForm;
 import io.poby_house.dto.TeacherForm;
 import io.poby_house.security.TeacherPrincipal;
@@ -92,6 +93,33 @@ public class TeacherController {
         }
         teacherService.update(id, form, principal.getId());
         redirect.addFlashAttribute("message", "수정했습니다.");
+        return "redirect:/admin/teachers";
+    }
+
+    @GetMapping("/{id}/password")
+    public String resetForm(@PathVariable Long id, Model model) {
+        model.addAttribute("form", new PasswordResetForm());
+        model.addAttribute("teacher", teacherService.get(id));
+        return "admin/teacher/password";
+    }
+
+    @PostMapping("/{id}/password")
+    public String reset(@PathVariable Long id,
+                        @Valid @ModelAttribute("form") PasswordResetForm form,
+                        BindingResult bindingResult,
+                        Model model,
+                        RedirectAttributes redirect) {
+        if (!form.isNewPasswordMatched()) {
+            bindingResult.rejectValue("newPasswordConfirm", "mismatch", "비밀번호가 서로 다릅니다");
+        }
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("teacher", teacherService.get(id));
+            return "admin/teacher/password";
+        }
+        Teacher teacher = teacherService.get(id);
+        teacherService.resetPassword(id, form.getNewPassword());
+        redirect.addFlashAttribute("message",
+                teacher.getName() + " 계정의 비밀번호를 새로 정했습니다. 본인에게 알려 주고 바꾸게 하세요.");
         return "redirect:/admin/teachers";
     }
 }
