@@ -32,6 +32,12 @@ server:
     # 에러 화면에 한국어 안내를 띄우려면 메시지가 넘어와야 한다.
     include-message: always
 
+poby:
+  remember-me:
+    # 자동 로그인 쿠키 서명 키. 바꾸면 기존 쿠키가 전부 무효가 된다.
+    # 배포할 때는 .env 의 REMEMBER_ME_KEY 로 덮어쓴다.
+    key: ${REMEMBER_ME_KEY:poby-house-local-dev}
+
 logging:
   level:
     root: info

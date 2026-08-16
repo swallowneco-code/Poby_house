@@ -1,13 +1,18 @@
 package io.poby_house.config;
 
+import io.poby_house.security.LoginFailureHandler;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.RememberMeServices;
+import org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices;
 
 /**
  * 로그인하지 않으면 아무 화면도 볼 수 없다.
@@ -16,8 +21,30 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class SecurityConfig {
 
+    /**
+     * 자동 로그인.
+     *
+     * 토큰 방식이라 테이블이 필요 없다. 쿠키에 서명만 담는다.
+     * 서명에 비밀번호 해시가 들어가므로, 비밀번호를 바꾸면 다른 기기의 자동 로그인이 저절로 끊긴다.
+     * 오히려 그게 바라는 동작이다.
+     *
+     * 빈으로 꺼내 두는 이유는 키를 한 곳에만 두기 위해서다.
+     */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public RememberMeServices rememberMeServices(UserDetailsService userDetailsService,
+                                                 @Value("${poby.remember-me.key}") String key) {
+        TokenBasedRememberMeServices services = new TokenBasedRememberMeServices(
+                key, userDetailsService, TokenBasedRememberMeServices.RememberMeTokenAlgorithm.SHA256);
+        services.setParameter("rememberMe");
+        services.setCookieName("POBY_REMEMBER");
+        services.setTokenValiditySeconds(60 * 60 * 24 * 30);
+        return services;
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   LoginFailureHandler loginFailureHandler,
+                                                   RememberMeServices rememberMeServices) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/css/**", "/js/**", "/favicon.ico").permitAll()
@@ -33,14 +60,18 @@ public class SecurityConfig {
                         .loginProcessingUrl("/login")
                         .usernameParameter("loginId")
                         .passwordParameter("password")
-                        .defaultSuccessUrl("/students", true)
-                        .failureUrl("/login?error")
+                        // alwaysUse 를 켜지 않는다.
+                        // 켜 두면 세션이 끊겨 다시 로그인했을 때 보던 화면으로 돌아가지 못하고
+                        // 늘 학생 목록으로 튕긴다. 인자 없는 형태는 원래 가려던 곳을 기억한다
+                        .defaultSuccessUrl("/students")
+                        .failureHandler(loginFailureHandler)
                         .permitAll())
+                .rememberMe(remember -> remember.rememberMeServices(rememberMeServices))
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .logoutSuccessUrl("/login?logout")
                         .invalidateHttpSession(true)
-                        .deleteCookies("JSESSIONID")
+                        .deleteCookies("JSESSIONID", "POBY_REMEMBER")
                         .permitAll());
         return http.build();
     }

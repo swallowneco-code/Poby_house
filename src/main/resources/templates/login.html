@@ -10,7 +10,17 @@
     <h1 class="auth-title">학생 관리</h1>
 
     <div class="flash" th:if="${message}" th:text="${message}"></div>
-    <div class="flash err" th:if="${param.error}">아이디 또는 비밀번호가 맞지 않습니다.</div>
+    <div th:if="${param.error}" th:switch="${param.error[0]}">
+        <div class="flash err" th:case="'disabled'">
+            사용이 중지된 계정입니다. 원장에게 문의하세요.
+        </div>
+        <div class="flash err" th:case="'locked'">
+            잠긴 계정입니다. 원장에게 문의하세요.
+        </div>
+        <div class="flash err" th:case="*">
+            아이디 또는 비밀번호가 맞지 않습니다.
+        </div>
+    </div>
     <div class="flash" th:if="${param.logout}">로그아웃되었습니다.</div>
 
     <form method="post" th:action="@{/login}">
@@ -22,6 +32,12 @@
 
             <label for="password">비밀번호</label>
             <input type="password" id="password" name="password" autocomplete="current-password" required>
+
+            <label class="check">
+                <input type="checkbox" name="rememberMe" checked>
+                이 기기에서 로그인 유지
+            </label>
+            <p class="hint">본인 기기에서만 켜세요. 30일 동안 다시 묻지 않습니다.</p>
         </div>
 
         <div class="actions">
