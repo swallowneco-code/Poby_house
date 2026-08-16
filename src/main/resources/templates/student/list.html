@@ -26,12 +26,20 @@
            th:text="${s.label}">재원</a>
     </div>
 
+    <!--
+      "한 명도 없다"와 "고른 조건에 맞는 사람이 없다"는 다른 상황이다.
+      필터 때문에 비었는데 등록 버튼을 내밀면 엉뚱한 안내가 된다.
+    -->
     <div th:if="${#lists.isEmpty(students)}">
-        <p class="empty">아직 등록된 학생이 없습니다.</p>
-        <!-- 비어 있는 화면에서 "오른쪽 위를 누르세요"라고 적는 대신 누를 것을 여기에 둔다 -->
-        <div class="actions">
-            <a class="btn primary wide big" th:href="@{/students/new}">+ 학생 등록</a>
+        <div th:if="${status == null and keyword == null}">
+            <p class="empty">아직 등록된 학생이 없습니다.</p>
+            <div class="actions">
+                <a class="btn primary wide big" th:href="@{/students/new}">+ 학생 등록</a>
+            </div>
         </div>
+        <p class="empty" th:unless="${status == null and keyword == null}">
+            조건에 맞는 학생이 없습니다.
+        </p>
     </div>
 
     <ul class="students">
@@ -50,10 +58,6 @@
             </a>
         </li>
     </ul>
-
-    <div class="actions" th:if="${not #lists.isEmpty(students)}">
-        <a class="btn primary wide big" th:href="@{/students/new}">+ 학생 등록</a>
-    </div>
 
     <p class="soon" th:if="${not #lists.isEmpty(students)}">
         총 <b th:text="${#lists.size(students)}">0</b>명

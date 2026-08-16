@@ -32,10 +32,6 @@
         </li>
     </ul>
 
-    <div class="actions" th:if="${not #lists.isEmpty(groups)}">
-        <a class="btn primary wide big" th:href="@{/classes/new}">+ 반 만들기</a>
-    </div>
-
     <p class="soon" th:if="${not #lists.isEmpty(groups)}">
         총 <b th:text="${#lists.size(groups)}">0</b>개 반
         <span th:if="${unassigned > 0}">

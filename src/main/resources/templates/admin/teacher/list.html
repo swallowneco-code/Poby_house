@@ -24,13 +24,8 @@
         </li>
     </ul>
 
-    <!-- 우상단 버튼만 두면 목록이 짧을 때 눈에 안 들어온다. 목록 바로 아래에 크게 한 번 더 둔다 -->
-    <div class="actions">
-        <a class="btn primary wide big" th:href="@{/admin/teachers/new}">+ 계정 추가</a>
-    </div>
-
     <p class="hint" th:if="${#lists.size(teachers) == 1}">
-        아직 계정이 하나뿐입니다. 강사가 늘면 여기서 계정을 만들어 주세요.
+        아직 계정이 하나뿐입니다. 강사가 늘면 오른쪽 위 <b>+ 계정 추가</b>로 만들어 주세요.
     </p>
 
     <p class="soon">
